@@ -1,0 +1,4019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>National Land Acquisition & Management System</title>
+
+<style>
+
+/* =========================
+   GLOBAL
+========================= */
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+:root{
+    --bg:#f4f7f6;
+    --card:#ffffff;
+    --text:#17211f;
+    --muted:#6b7a76;
+    --border:#e1e8e5;
+    --primary:#087f5b;
+    --primary-dark:#056346;
+    --secondary:#e8f5f0;
+    --danger:#dc3545;
+    --warning:#f59f00;
+    --success:#198754;
+    --sidebar:#10201c;
+    --sidebar-text:#c9d7d3;
+    --shadow:0 8px 25px rgba(0,0,0,.06);
+}
+
+body.dark{
+    --bg:#101817;
+    --card:#17211f;
+    --text:#eaf4f1;
+    --muted:#8da19c;
+    --border:#263532;
+    --secondary:#19342d;
+    --sidebar:#0b1210;
+    --sidebar-text:#b8c8c3;
+}
+
+body{
+    font-family:Arial, Helvetica, sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    transition:.25s;
+}
+
+button,
+input,
+select{
+    font-family:inherit;
+}
+
+/* =========================
+   LAYOUT
+========================= */
+
+.app{
+    display:flex;
+    min-height:100vh;
+}
+
+.sidebar{
+    width:250px;
+    background:var(--sidebar);
+    color:white;
+    position:fixed;
+    left:0;
+    top:0;
+    bottom:0;
+    overflow-y:auto;
+    z-index:1000;
+}
+
+.logo{
+    padding:22px 20px;
+    border-bottom:1px solid rgba(255,255,255,.08);
+}
+
+.logo h2{
+    font-size:18px;
+    margin-bottom:5px;
+}
+
+.logo p{
+    font-size:11px;
+    color:#91aaa2;
+}
+
+.nav{
+    padding:15px 10px;
+}
+
+.nav-title{
+    font-size:10px;
+    color:#789089;
+    padding:12px 10px 7px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+}
+
+.nav-item{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:12px;
+    margin:3px 0;
+    border-radius:8px;
+    color:var(--sidebar-text);
+    cursor:pointer;
+    font-size:13px;
+    transition:.2s;
+}
+
+.nav-item:hover{
+    background:rgba(255,255,255,.07);
+    color:white;
+}
+
+.nav-item.active{
+    background:var(--primary);
+    color:white;
+}
+
+.main{
+    margin-left:250px;
+    width:calc(100% - 250px);
+}
+
+/* =========================
+   TOPBAR
+========================= */
+
+.topbar{
+    height:70px;
+    background:var(--card);
+    border-bottom:1px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 25px;
+    position:sticky;
+    top:0;
+    z-index:500;
+}
+
+.page-heading h1{
+    font-size:18px;
+    margin-bottom:4px;
+}
+
+.page-heading p{
+    font-size:11px;
+    color:var(--muted);
+}
+
+.top-actions{
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+.search{
+    position:relative;
+}
+
+.search input{
+    width:250px;
+    padding:10px 14px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    outline:none;
+    background:var(--bg);
+    color:var(--text);
+}
+
+.icon-btn{
+    width:38px;
+    height:38px;
+    border:1px solid var(--border);
+    background:var(--card);
+    color:var(--text);
+    border-radius:8px;
+    cursor:pointer;
+}
+
+.profile{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-left:5px;
+}
+
+.avatar{
+    width:35px;
+    height:35px;
+    background:var(--primary);
+    color:white;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:bold;
+}
+
+/* =========================
+   CONTENT
+========================= */
+
+.content{
+    padding:25px;
+}
+
+.page{
+    display:none;
+}
+
+.page.active{
+    display:block;
+}
+
+.section-title{
+    margin-bottom:18px;
+}
+
+.section-title h2{
+    font-size:22px;
+    margin-bottom:5px;
+}
+
+.section-title p{
+    color:var(--muted);
+    font-size:13px;
+}
+
+/* =========================
+   FILTERS
+========================= */
+
+.filter-bar{
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:15px;
+    margin-bottom:20px;
+}
+
+.filter-bar select,
+.filter-bar input{
+    padding:10px 12px;
+    border:1px solid var(--border);
+    border-radius:7px;
+    background:var(--bg);
+    color:var(--text);
+    outline:none;
+}
+
+/* =========================
+   BUTTONS
+========================= */
+
+.primary-btn{
+    background:var(--primary);
+    color:white;
+    border:none;
+    padding:10px 16px;
+    border-radius:7px;
+    cursor:pointer;
+    font-size:13px;
+}
+
+.primary-btn:hover{
+    background:var(--primary-dark);
+}
+
+.secondary-btn{
+    background:var(--secondary);
+    color:var(--primary);
+    border:1px solid var(--border);
+    padding:10px 16px;
+    border-radius:7px;
+    cursor:pointer;
+}
+
+.danger-btn{
+    background:#feecef;
+    color:var(--danger);
+    border:1px solid #f6cbd0;
+    padding:9px 14px;
+    border-radius:7px;
+    cursor:pointer;
+}
+
+/* =========================
+   KPI
+========================= */
+
+.kpi-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:18px;
+    margin-bottom:22px;
+}
+
+.kpi{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:20px;
+    box-shadow:var(--shadow);
+}
+
+.kpi-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.kpi-label{
+    font-size:12px;
+    color:var(--muted);
+}
+
+.kpi-icon{
+    width:35px;
+    height:35px;
+    border-radius:8px;
+    background:var(--secondary);
+    color:var(--primary);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.kpi-value{
+    font-size:28px;
+    font-weight:bold;
+    margin-top:15px;
+}
+
+.kpi-change{
+    font-size:11px;
+    margin-top:7px;
+}
+
+.positive{
+    color:var(--success);
+}
+
+.negative{
+    color:var(--danger);
+}
+
+/* =========================
+   CARDS
+========================= */
+
+.grid-2{
+    display:grid;
+    grid-template-columns:1.4fr 1fr;
+    gap:20px;
+}
+
+.grid-3{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:18px;
+}
+
+.card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:20px;
+    box-shadow:var(--shadow);
+    margin-bottom:20px;
+}
+
+.card-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:18px;
+}
+
+.card-header h3{
+    font-size:15px;
+}
+
+.card-header span{
+    color:var(--muted);
+    font-size:12px;
+}
+
+/* =========================
+   TABLE
+========================= */
+
+.table-wrap{
+    overflow-x:auto;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+th{
+    text-align:left;
+    font-size:11px;
+    color:var(--muted);
+    padding:12px;
+    border-bottom:1px solid var(--border);
+}
+
+td{
+    padding:13px 12px;
+    font-size:12px;
+    border-bottom:1px solid var(--border);
+}
+
+tr:hover{
+    background:var(--secondary);
+}
+
+.status{
+    display:inline-block;
+    padding:5px 9px;
+    border-radius:20px;
+    font-size:10px;
+    font-weight:bold;
+}
+
+.status.green{
+    background:#dff5ea;
+    color:#087f5b;
+}
+
+.status.yellow{
+    background:#fff3cd;
+    color:#996c00;
+}
+
+.status.red{
+    background:#fde2e5;
+    color:#b42332;
+}
+
+.status.blue{
+    background:#e1efff;
+    color:#1769aa;
+}
+
+/* =========================
+   PROJECT CARDS
+========================= */
+
+.project-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:18px;
+}
+
+.project-card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:18px;
+    box-shadow:var(--shadow);
+}
+
+.project-card h3{
+    font-size:15px;
+    margin-bottom:8px;
+}
+
+.project-id{
+    color:var(--primary);
+    font-size:11px;
+    margin-bottom:12px;
+}
+
+.project-info{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin:15px 0;
+}
+
+.info-item span{
+    display:block;
+    font-size:10px;
+    color:var(--muted);
+}
+
+.info-item strong{
+    font-size:12px;
+}
+
+.progress{
+    height:7px;
+    background:var(--border);
+    border-radius:20px;
+    overflow:hidden;
+    margin:8px 0;
+}
+
+.progress-bar{
+    height:100%;
+    background:var(--primary);
+    border-radius:20px;
+}
+
+/* =========================
+   CHARTS
+========================= */
+
+.chart{
+    height:250px;
+    display:flex;
+    align-items:flex-end;
+    gap:15px;
+    padding:20px 10px;
+}
+
+.bar{
+    flex:1;
+    background:var(--primary);
+    border-radius:5px 5px 0 0;
+    min-height:20px;
+    position:relative;
+}
+
+.bar span{
+    position:absolute;
+    bottom:-22px;
+    left:50%;
+    transform:translateX(-50%);
+    font-size:10px;
+    color:var(--muted);
+}
+
+/* =========================
+   GIS MAP
+========================= */
+
+.map{
+    height:430px;
+    background:
+        linear-gradient(45deg,#e8eee9 25%,transparent 25%),
+        linear-gradient(-45deg,#e8eee9 25%,transparent 25%),
+        linear-gradient(45deg,transparent 75%,#e8eee9 75%),
+        linear-gradient(-45deg,transparent 75%,#e8eee9 75%);
+    background-size:40px 40px;
+    background-position:0 0,0 20px,20px -20px,-20px 0;
+    border-radius:10px;
+    position:relative;
+    overflow:hidden;
+}
+
+body.dark .map{
+    background:
+        linear-gradient(45deg,#172521 25%,transparent 25%),
+        linear-gradient(-45deg,#172521 25%,transparent 25%),
+        linear-gradient(45deg,transparent 75%,#172521 75%),
+        linear-gradient(-45deg,transparent 75%,#172521 75%);
+    background-size:40px 40px;
+    background-position:0 0,0 20px,20px -20px,-20px 0;
+}
+
+.map-label{
+    position:absolute;
+    padding:7px 10px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:6px;
+    font-size:10px;
+    box-shadow:var(--shadow);
+}
+
+.map-marker{
+    position:absolute;
+    width:15px;
+    height:15px;
+    border-radius:50%;
+    background:var(--primary);
+    border:3px solid white;
+    box-shadow:0 2px 7px rgba(0,0,0,.25);
+}
+
+/* =========================
+   TIMELINE
+========================= */
+
+.timeline{
+    position:relative;
+    padding-left:25px;
+}
+
+.timeline::before{
+    content:"";
+    position:absolute;
+    left:7px;
+    top:0;
+    bottom:0;
+    width:2px;
+    background:var(--border);
+}
+
+.timeline-item{
+    position:relative;
+    padding-bottom:22px;
+}
+
+.timeline-item::before{
+    content:"";
+    position:absolute;
+    left:-22px;
+    top:3px;
+    width:10px;
+    height:10px;
+    background:var(--primary);
+    border-radius:50%;
+}
+
+.timeline-item h4{
+    font-size:12px;
+    margin-bottom:4px;
+}
+
+.timeline-item p{
+    color:var(--muted);
+    font-size:11px;
+}
+
+.timeline-item small{
+    color:var(--muted);
+    font-size:10px;
+}
+
+/* =========================
+   ALERTS
+========================= */
+
+.alert{
+    display:flex;
+    gap:12px;
+    padding:14px;
+    border:1px solid var(--border);
+    border-radius:9px;
+    margin-bottom:10px;
+}
+
+.alert-icon{
+    width:34px;
+    height:34px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:7px;
+    background:var(--secondary);
+}
+
+.alert h4{
+    font-size:12px;
+    margin-bottom:4px;
+}
+
+.alert p{
+    font-size:11px;
+    color:var(--muted);
+}
+
+/* =========================
+   AI BOX
+========================= */
+
+.ai-box{
+    background:linear-gradient(135deg,var(--secondary),var(--card));
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:20px;
+}
+
+.ai-title{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:15px;
+}
+
+.ai-icon{
+    width:40px;
+    height:40px;
+    border-radius:10px;
+    background:var(--primary);
+    color:white;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.ai-result{
+    margin-top:15px;
+    padding:15px;
+    background:var(--card);
+    border-radius:8px;
+    border:1px solid var(--border);
+}
+
+/* =========================
+   FORMS
+========================= */
+
+.form-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:15px;
+}
+
+.form-group label{
+    display:block;
+    font-size:11px;
+    color:var(--muted);
+    margin-bottom:6px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea{
+    width:100%;
+    padding:10px 12px;
+    border:1px solid var(--border);
+    border-radius:7px;
+    background:var(--bg);
+    color:var(--text);
+    outline:none;
+}
+
+textarea{
+    resize:vertical;
+}
+
+/* =========================
+   MODAL
+========================= */
+
+.modal{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.55);
+    z-index:2000;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+}
+
+.modal.show{
+    display:flex;
+}
+
+.modal-box{
+    width:600px;
+    max-width:100%;
+    background:var(--card);
+    border-radius:12px;
+    padding:25px;
+    max-height:90vh;
+    overflow-y:auto;
+}
+
+.modal-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+}
+
+.close{
+    border:none;
+    background:none;
+    font-size:22px;
+    color:var(--muted);
+    cursor:pointer;
+}
+
+/* =========================
+   TOAST
+========================= */
+
+.toast{
+    position:fixed;
+    right:25px;
+    bottom:25px;
+    background:var(--sidebar);
+    color:white;
+    padding:13px 18px;
+    border-radius:8px;
+    font-size:12px;
+    transform:translateY(100px);
+    opacity:0;
+    transition:.3s;
+    z-index:3000;
+}
+
+.toast.show{
+    transform:translateY(0);
+    opacity:1;
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+.mobile-menu{
+    display:none;
+}
+
+@media(max-width:1100px){
+
+    .kpi-grid{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+    .project-grid{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+    .grid-2{
+        grid-template-columns:1fr;
+    }
+}
+
+@media(max-width:800px){
+
+    .sidebar{
+        transform:translateX(-100%);
+        transition:.3s;
+    }
+
+    .sidebar.open{
+        transform:translateX(0);
+    }
+
+    .main{
+        margin-left:0;
+        width:100%;
+    }
+
+    .mobile-menu{
+        display:block;
+    }
+
+    .topbar{
+        padding:0 15px;
+    }
+
+    .search{
+        display:none;
+    }
+
+    .content{
+        padding:15px;
+    }
+
+    .project-grid{
+        grid-template-columns:1fr;
+    }
+
+    .grid-3{
+        grid-template-columns:1fr;
+    }
+
+    .form-grid{
+        grid-template-columns:1fr;
+    }
+}
+
+@media(max-width:550px){
+
+    .kpi-grid{
+        grid-template-columns:1fr;
+    }
+
+    .page-heading h1{
+        font-size:14px;
+    }
+
+    .page-heading p{
+        display:none;
+    }
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<!-- =========================
+     SIDEBAR
+========================= -->
+
+<aside class="sidebar" id="sidebar">
+
+    <div class="logo">
+        <h2>National Land System</h2>
+        <p>Digital Land Acquisition Platform</p>
+    </div>
+
+    <div class="nav">
+
+        <div class="nav-title">Main</div>
+
+        <div class="nav-item active" onclick="showPage('dashboard',this)">
+            📊 Dashboard
+        </div>
+
+        <div class="nav-item" onclick="showPage('projects',this)">
+            🏗️ Projects
+        </div>
+
+        <div class="nav-item" onclick="showPage('gis',this)">
+            🗺️ GIS Map
+        </div>
+
+        <div class="nav-item" onclick="showPage('parcels',this)">
+            📍 Land Parcels
+        </div>
+
+        <div class="nav-title">Management</div>
+
+        <div class="nav-item" onclick="showPage('workflow',this)">
+            🔄 Acquisition Workflow
+        </div>
+
+        <div class="nav-item" onclick="showPage('compensation',this)">
+            💰 Compensation
+        </div>
+
+        <div class="nav-item" onclick="showPage('disputes',this)">
+            ⚖️ Disputes
+        </div>
+
+        <div class="nav-item" onclick="showPage('documents',this)">
+            📄 Documents
+        </div>
+
+        <div class="nav-title">Intelligence</div>
+
+        <div class="nav-item" onclick="showPage('ai',this)">
+            🤖 Digital Support
+        </div>
+
+        <div class="nav-item" onclick="showPage('analytics',this)">
+            📈 Reports & Analytics
+        </div>
+
+        <div class="nav-title">Administration</div>
+
+        <div class="nav-item" onclick="showPage('alerts',this)">
+            🔔 Alerts
+        </div>
+
+        <div class="nav-item" onclick="showPage('users',this)">
+            👥 Users & Roles
+        </div>
+
+        <div class="nav-item" onclick="showPage('audit',this)">
+            🧾 Audit Trail
+        </div>
+
+        <div class="nav-item" onclick="showPage('settings',this)">
+            ⚙️ Settings
+        </div>
+
+    </div>
+
+</aside>
+
+
+<!-- =========================
+     MAIN
+========================= -->
+
+<main class="main">
+
+<header class="topbar">
+
+    <div class="page-heading">
+
+        <div style="display:flex;align-items:center;gap:10px">
+
+            <button class="icon-btn mobile-menu" onclick="toggleSidebar()">
+                ☰
+            </button>
+
+            <div>
+                <h1 id="pageTitle">
+                    Real-Time National Land Acquisition & Management System
+                </h1>
+
+                <p>
+                    End-to-End Digital Monitoring & Decision Support
+                </p>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="top-actions">
+
+        <div class="search">
+            <input
+                type="text"
+                id="globalSearch"
+                placeholder="Search projects, parcels..."
+                onkeyup="globalSearch()"
+            >
+        </div>
+
+        <button class="icon-btn" onclick="toggleDark()">
+            🌙
+        </button>
+
+        <button class="icon-btn" onclick="showToast('No new notifications')">
+            🔔
+        </button>
+
+        <div class="profile">
+            <div class="avatar">AD</div>
+
+            <div style="display:none">
+                <strong>Admin</strong>
+            </div>
+        </div>
+
+    </div>
+
+</header>
+
+
+<div class="content">
+
+
+<!-- ==================================================
+     DASHBOARD
+================================================== -->
+
+<section class="page active" id="dashboard">
+
+    <div class="section-title">
+        <h2>Dashboard Overview</h2>
+        <p>Monitor national land acquisition activities in real time.</p>
+    </div>
+
+
+    <div class="filter-bar">
+
+        <select id="stateFilter" onchange="filterDashboard()">
+            <option value="">All India</option>
+            <option>Uttar Pradesh</option>
+            <option>Maharashtra</option>
+            <option>Gujarat</option>
+            <option>Rajasthan</option>
+        </select>
+
+        <select id="typeFilter" onchange="filterDashboard()">
+            <option value="">All Project Types</option>
+            <option>Highway</option>
+            <option>Railway</option>
+            <option>Industrial</option>
+            <option>Metro</option>
+        </select>
+
+        <button class="primary-btn" onclick="openProjectModal()">
+            + Add Project
+        </button>
+
+    </div>
+
+
+    <div class="kpi-grid">
+
+        <div class="kpi">
+
+            <div class="kpi-top">
+                <span class="kpi-label">Total Projects</span>
+                <div class="kpi-icon">🏗️</div>
+            </div>
+
+            <div class="kpi-value" id="totalProjects">
+                1284
+            </div>
+
+            <div class="kpi-change positive">
+                ↑ 8.4% from last month
+            </div>
+
+        </div>
+
+
+        <div class="kpi">
+
+            <div class="kpi-top">
+                <span class="kpi-label">Land Acquired</span>
+                <div class="kpi-icon">🌾</div>
+            </div>
+
+            <div class="kpi-value">
+                68.7%
+            </div>
+
+            <div class="kpi-change positive">
+                ↑ 4.2% progress
+            </div>
+
+        </div>
+
+
+        <div class="kpi">
+
+            <div class="kpi-top">
+                <span class="kpi-label">Pending Cases</span>
+                <div class="kpi-icon">⚖️</div>
+            </div>
+
+            <div class="kpi-value">
+                342
+            </div>
+
+            <div class="kpi-change negative">
+                ↑ 2.1% this month
+            </div>
+
+        </div>
+
+
+        <div class="kpi">
+
+            <div class="kpi-top">
+                <span class="kpi-label">Compensation</span>
+                <div class="kpi-icon">₹</div>
+            </div>
+
+            <div class="kpi-value">
+                ₹482 Cr
+            </div>
+
+            <div class="kpi-change positive">
+                81.6% disbursed
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="grid-2">
+
+        <div class="card">
+
+            <div class="card-header">
+
+                <h3>Acquisition Progress</h3>
+
+                <span>2026</span>
+
+            </div>
+
+            <div class="chart">
+
+                <div class="bar" style="height:50%">
+                    <span>Jan</span>
+                </div>
+
+                <div class="bar" style="height:62%">
+                    <span>Feb</span>
+                </div>
+
+                <div class="bar" style="height:55%">
+                    <span>Mar</span>
+                </div>
+
+                <div class="bar" style="height:72%">
+                    <span>Apr</span>
+                </div>
+
+                <div class="bar" style="height:78%">
+                    <span>May</span>
+                </div>
+
+                <div class="bar" style="height:88%">
+                    <span>Jun</span>
+                </div>
+
+                <div class="bar" style="height:94%">
+                    <span>Jul</span>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <div class="card-header">
+
+                <h3>Recent Activities</h3>
+
+                <span>View all</span>
+
+            </div>
+
+            <div class="timeline">
+
+                <div class="timeline-item">
+
+                    <h4>Parcel PAR-001284 updated</h4>
+
+                    <p>Verification completed successfully.</p>
+
+                    <small>10 minutes ago</small>
+
+                </div>
+
+                <div class="timeline-item">
+
+                    <h4>Compensation approved</h4>
+
+                    <p>Payment record approved by officer.</p>
+
+                    <small>42 minutes ago</small>
+
+                </div>
+
+                <div class="timeline-item">
+
+                    <h4>New dispute registered</h4>
+
+                    <p>Ownership dispute requires review.</p>
+
+                    <small>1 hour ago</small>
+
+                </div>
+
+                <div class="timeline-item">
+
+                    <h4>GIS survey uploaded</h4>
+
+                    <p>Survey data added to project.</p>
+
+                    <small>2 hours ago</small>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="card">
+
+        <div class="card-header">
+
+            <h3>Priority Projects</h3>
+
+            <button class="secondary-btn" onclick="showPage('projects')">
+                View All
+            </button>
+
+        </div>
+
+        <div class="table-wrap">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+                        <th>Project ID</th>
+                        <th>Project</th>
+                        <th>State</th>
+                        <th>Type</th>
+                        <th>Progress</th>
+                        <th>Status</th>
+                    </tr>
+
+                </thead>
+
+                <tbody id="dashboardProjects">
+
+                    <tr>
+                        <td>PRJ-2026-001</td>
+                        <td>National Highway Expansion</td>
+                        <td>Uttar Pradesh</td>
+                        <td>Highway</td>
+                        <td>72%</td>
+                        <td>
+                            <span class="status green">
+                                On Track
+                            </span>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td>PRJ-2026-002</td>
+                        <td>Eastern Freight Corridor</td>
+                        <td>Uttar Pradesh</td>
+                        <td>Railway</td>
+                        <td>54%</td>
+                        <td>
+                            <span class="status yellow">
+                                Delayed
+                            </span>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td>PRJ-2026-003</td>
+                        <td>Industrial Development Zone</td>
+                        <td>Gujarat</td>
+                        <td>Industrial</td>
+                        <td>81%</td>
+                        <td>
+                            <span class="status green">
+                                On Track
+                            </span>
+                        </td>
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- ==================================================
+     PROJECTS
+================================================== -->
+
+<section class="page" id="projects">
+
+    <div class="section-title">
+
+        <h2>Land Acquisition Projects</h2>
+
+        <p>
+            Manage and monitor infrastructure projects.
+        </p>
+
+    </div>
+
+
+    <div class="filter-bar">
+
+        <select>
+            <option>All States</option>
+            <option>Uttar Pradesh</option>
+            <option>Gujarat</option>
+            <option>Maharashtra</option>
+        </select>
+
+        <select>
+            <option>All Types</option>
+            <option>Highway</option>
+            <option>Railway</option>
+            <option>Metro</option>
+        </select>
+
+        <button class="primary-btn" onclick="openProjectModal()">
+            + New Project
+        </button>
+
+    </div>
+
+
+    <div class="project-grid" id="projectGrid">
+
+        <div class="project-card">
+
+            <div class="project-id">
+                PRJ-2026-001
+            </div>
+
+            <h3>
+                National Highway Expansion
+            </h3>
+
+            <span class="status green">
+                On Track
+            </span>
+
+            <div class="project-info">
+
+                <div class="info-item">
+                    <span>State</span>
+                    <strong>Uttar Pradesh</strong>
+                </div>
+
+                <div class="info-item">
+                    <span>District</span>
+                    <strong>Bareilly</strong>
+                </div>
+
+                <div class="info-item">
+                    <span>Land Required</span>
+                    <strong>450 Ha</strong>
+                </div>
+
+                <div class="info-item">
+                    <span>Acquired</span>
+                    <strong>320 Ha</strong>
+                </div>
+
+            </div>
+
+            <div style="font-size:11px;color:var(--muted)">
+                Acquisition Progress
+            </div>
+
+            <div class="progress">
+                <div class="progress-bar" style="width:72%"></div>
+            </div>
+
+            <div style="font-size:11px">
+                72% completed
+            </div>
+
+        </div>
+
+
+        <div class="project-card">
+
+            <div class="project-id">
+                PRJ-2026-002
+            </div>
+
+            <h3>
+                Eastern Freight Corridor
+            </h3>
+
+            <span class="status yellow">
+                Delayed
+            </span>
+
+            <div class="project-info">
+
+                <div class="info-item">
+                    <span>State</span>
+                    <strong>Uttar Pradesh</strong>
+                </div>
+
+                <div class="info-item">
+                    <span>District</span>
+                    <strong>Kanpur</strong>
+                </div>
+
+                <div class="info-item">
+                    <span>Land Required</span>
+                    <strong>720 Ha</strong>
+                </div>
+
+                <div class="info-item">
+                    <span>Acquired</span>
+                    <strong>388 Ha</strong>
+                </div>
+
+            </div>
+
+            <div style="font-size:11px;color:var(--muted)">
+                Acquisition Progress
+            </div>
+
+            <div class="progress">
+                <div class="progress-bar" style="width:54%"></div>
+            </div>
+
+            <div style="font-size:11px">
+                54% completed
+            </div>
+
+        </div>
+
+
+        <div class="project-card">
+
+            <div class="project-id">
+                PRJ-2026-003
+            </div>
+
+            <h3>
+                Industrial Development Zone
+            </h3>
+
+            <span class="status green">
+                On Track
+            </span>
+
+            <div class="project-info">
+
+                <div class="info-item">
+                    <span>State</span>
+                    <strong>Gujarat</strong>
+                </div>
+
+                <div class="info-item">
+                    <span>District</span>
+                    <strong>Ahmedabad</strong>
+                </div>
+
+                <div class="info-item">
+                    <span>Land Required</span>
+                    <strong>280 Ha</strong>
+                </div>
+
+                <div class="info-item">
+                    <span>Acquired</span>
+                    <strong>227 Ha</strong>
+                </div>
+
+            </div>
+
+            <div style="font-size:11px;color:var(--muted)">
+                Acquisition Progress
+            </div>
+
+            <div class="progress">
+                <div class="progress-bar" style="width:81%"></div>
+            </div>
+
+            <div style="font-size:11px">
+                81% completed
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- ==================================================
+     GIS
+================================================== -->
+
+<section class="page" id="gis">
+
+    <div class="section-title">
+
+        <h2>GIS Land Acquisition Map</h2>
+
+        <p>
+            Geographic monitoring of projects and land parcels.
+        </p>
+
+    </div>
+
+
+    <div class="filter-bar">
+
+        <select>
+            <option>All States</option>
+            <option>Uttar Pradesh</option>
+            <option>Gujarat</option>
+            <option>Maharashtra</option>
+        </select>
+
+        <select>
+            <option>All Status</option>
+            <option>Acquired</option>
+            <option>Under Process</option>
+            <option>Disputed</option>
+        </select>
+
+        <button class="secondary-btn" onclick="showToast('GIS layer refreshed')">
+            Refresh Map
+        </button>
+
+    </div>
+
+
+    <div class="card">
+
+        <div class="map">
+
+            <div class="map-marker" style="left:35%;top:35%"></div>
+            <div class="map-marker" style="left:52%;top:48%"></div>
+            <div class="map-marker" style="left:63%;top:32%"></div>
+            <div class="map-marker" style="left:45%;top:68%"></div>
+
+            <div class="map-label" style="left:29%;top:27%">
+                Bareilly Project
+            </div>
+
+            <div class="map-label" style="left:48%;top:53%">
+                Kanpur Project
+            </div>
+
+            <div class="map-label" style="left:65%;top:25%">
+                Ahmedabad
+            </div>
+
+            <div class="map-label" style="left:39%;top:73%">
+                Parcel Cluster
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="grid-3">
+
+        <div class="card">
+            <h3 style="font-size:14px;margin-bottom:10px">
+                🟢 Acquired
+            </h3>
+            <div class="kpi-value">68.7%</div>
+        </div>
+
+        <div class="card">
+            <h3 style="font-size:14px;margin-bottom:10px">
+                🟡 Under Process
+            </h3>
+            <div class="kpi-value">21.4%</div>
+        </div>
+
+        <div class="card">
+            <h3 style="font-size:14px;margin-bottom:10px">
+                🔴 Disputed
+            </h3>
+            <div class="kpi-value">9.9%</div>
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- ==================================================
+     PARCELS
+================================================== -->
+
+<section class="page" id="parcels">
+
+    <div class="section-title">
+
+        <h2>Land Parcels</h2>
+
+        <p>
+            Track individual land parcels associated with projects.
+        </p>
+
+    </div>
+
+
+    <div class="filter-bar">
+
+        <input
+            type="text"
+            id="parcelSearch"
+            placeholder="Search parcel ID..."
+            onkeyup="searchParcels()"
+        >
+
+        <select>
+            <option>All Status</option>
+            <option>Verified</option>
+            <option>Pending</option>
+            <option>Disputed</option>
+        </select>
+
+        <button class="primary-btn" onclick="showToast('Parcel registration form opened')">
+            + Add Parcel
+        </button>
+
+    </div>
+
+
+    <div class="card">
+
+        <div class="table-wrap">
+
+            <table id="parcelTable">
+
+                <thead>
+
+                    <tr>
+                        <th>Parcel ID</th>
+                        <th>Project</th>
+                        <th>District</th>
+                        <th>Area</th>
+                        <th>Verification</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    <tr>
+                        <td>PAR-001284</td>
+                        <td>PRJ-2026-001</td>
+                        <td>Bareilly</td>
+                        <td>2.4 Ha</td>
+                        <td>
+                            <span class="status green">
+                                Verified
+                            </span>
+                        </td>
+                        <td>
+                            <span class="status green">
+                                Acquired
+                            </span>
+                        </td>
+                        <td>
+                            <button
+                                class="secondary-btn"
+                                onclick="viewParcel('PAR-001284')"
+                            >
+                                View
+                            </button>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td>PAR-001285</td>
+                        <td>PRJ-2026-001</td>
+                        <td>Bareilly</td>
+                        <td>3.1 Ha</td>
+                        <td>
+                            <span class="status yellow">
+                                Pending
+                            </span>
+                        </td>
+                        <td>
+                            <span class="status yellow">
+                                Under Process
+                            </span>
+                        </td>
+                        <td>
+                            <button
+                                class="secondary-btn"
+                                onclick="viewParcel('PAR-001285')"
+                            >
+                                View
+                            </button>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td>PAR-001286</td>
+                        <td>PRJ-2026-002</td>
+                        <td>Kanpur</td>
+                        <td>4.6 Ha</td>
+                        <td>
+                            <span class="status green">
+                                Verified
+                            </span>
+                        </td>
+                        <td>
+                            <span class="status red">
+                                Disputed
+                            </span>
+                        </td>
+                        <td>
+                            <button
+                                class="secondary-btn"
+                                onclick="viewParcel('PAR-001286')"
+                            >
+                                View
+                            </button>
+                        </td>
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- ==================================================
+     WORKFLOW
+================================================== -->
+
+<section class="page" id="workflow">
+
+    <div class="section-title">
+
+        <h2>Acquisition Workflow</h2>
+
+        <p>
+            Track the complete land acquisition lifecycle.
+        </p>
+
+    </div>
+
+
+    <div class="card">
+
+        <div class="timeline">
+
+            <div class="timeline-item">
+                <h4>1. Land Identification</h4>
+                <p>
+                    Required land parcels are identified and mapped.
+                </p>
+                <small>Completed</small>
+            </div>
+
+            <div class="timeline-item">
+                <h4>2. Preliminary Verification</h4>
+                <p>
+                    Land records and parcel information are verified.
+                </p>
+                <small>Completed</small>
+            </div>
+
+            <div class="timeline-item">
+                <h4>3. Notification</h4>
+                <p>
+                    Acquisition notification is issued.
+                </p>
+                <small>In Progress</small>
+            </div>
+
+            <div class="timeline-item">
+                <h4>4. Objection / Dispute</h4>
+                <p>
+                    Objections and ownership disputes are processed.
+                </p>
+                <small>Pending</small>
+            </div>
+
+            <div class="timeline-item">
+                <h4>5. Compensation</h4>
+                <p>
+                    Eligible compensation is calculated and disbursed.
+                </p>
+                <small>Pending</small>
+            </div>
+
+            <div class="timeline-item">
+                <h4>6. Final Acquisition</h4>
+                <p>
+                    Parcel ownership and acquisition status are updated.
+                </p>
+                <small>Pending</small>
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- ==================================================
+     COMPENSATION
+================================================== -->
+
+<section class="page" id="compensation">
+
+    <div class="section-title">
+
+        <h2>Compensation Management</h2>
+
+        <p>
+            Monitor compensation assessment and disbursement.
+        </p>
+
+    </div>
+
+
+    <div class="kpi-grid">
+
+        <div class="kpi">
+            <div class="kpi-label">
+                Total Estimated
+            </div>
+            <div class="kpi-value">
+                ₹590 Cr
+            </div>
+        </div>
+
+        <div class="kpi">
+            <div class="kpi-label">
+                Disbursed
+            </div>
+            <div class="kpi-value">
+                ₹482 Cr
+            </div>
+        </div>
+
+        <div class="kpi">
+            <div class="kpi-label">
+                Pending
+            </div>
+            <div class="kpi-value">
+                ₹108 Cr
+            </div>
+        </div>
+
+        <div class="kpi">
+            <div class="kpi-label">
+                Beneficiaries
+            </div>
+            <div class="kpi-value">
+                18,421
+            </div>
+        </div>
+
+    </div>
+
+
+    <div class="card">
+
+        <div class="card-header">
+            <h3>Recent Compensation Records</h3>
+        </div>
+
+        <div class="table-wrap">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>Parcel</th>
+                        <th>Estimated Amount</th>
+                        <th>Paid Amount</th>
+                        <th>Status</th>
+                        <th>Updated</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    <tr>
+                        <td>PAR-001284</td>
+                        <td>₹8,50,000</td>
+                        <td>₹8,50,000</td>
+                        <td>
+                            <span class="status green">
+                                Paid
+                            </span>
+                        </td>
+                        <td>Today</td>
+                    </tr>
+
+                    <tr>
+                        <td>PAR-001285</td>
+                        <td>₹11,20,000</td>
+                        <td>₹6,00,000</td>
+                        <td>
+                            <span class="status yellow">
+                                Partially Paid
+                            </span>
+                        </td>
+                        <td>Yesterday</td>
+                    </tr>
+
+                    <tr>
+                        <td>PAR-001286</td>
+                        <td>₹14,50,000</td>
+                        <td>₹0</td>
+                        <td>
+                            <span class="status red">
+                                Pending
+                            </span>
+                        </td>
+                        <td>2 days ago</td>
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- ==================================================
+     DISPUTES
+================================================== -->
+
+<section class="page" id="disputes">
+
+    <div class="section-title">
+
+        <h2>Dispute Management</h2>
+
+        <p>
+            Track ownership disputes, objections and legal cases.
+        </p>
+
+    </div>
+
+
+    <div class="kpi-grid">
+
+        <div class="kpi">
+            <div class="kpi-label">
+                Total Disputes
+            </div>
+            <div class="kpi-value">
+                342
+            </div>
+        </div>
+
+        <div class="kpi">
+            <div class="kpi-label">
+                High Priority
+            </div>
+            <div class="kpi-value">
+                48
+            </div>
+        </div>
+
+        <div class="kpi">
+            <div class="kpi-label">
+                Resolved
+            </div>
+            <div class="kpi-value">
+                81.2%
+            </div>
+        </div>
+
+        <div class="kpi">
+            <div class="kpi-label">
+                Avg. Resolution
+            </div>
+            <div class="kpi-value">
+                64 Days
+            </div>
+        </div>
+
+    </div>
+
+
+    <div class="card">
+
+        <div class="table-wrap">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>Case ID</th>
+                        <th>Parcel</th>
+                        <th>Type</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    <tr>
+                        <td>DSP-2026-021</td>
+                        <td>PAR-001286</td>
+                        <td>Ownership Dispute</td>
+                        <td>
+                            <span class="status red">
+                                High
+                            </span>
+                        </td>
+                        <td>
+                            <span class="status yellow">
+                                Pending
+                            </span>
+                        </td>
+                        <td>
+                            <button
+                                class="secondary-btn"
+                                onclick="showToast('Dispute opened')"
+                            >
+                                Review
+                            </button>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td>DSP-2026-022</td>
+                        <td>PAR-001301</td>
+                        <td>Compensation Objection</td>
+                        <td>
+                            <span class="status yellow">
+                                Medium
+                            </span>
+                        </td>
+                        <td>
+                            <span class="status blue">
+                                Under Review
+                            </span>
+                        </td>
+                        <td>
+                            <button
+                                class="secondary-btn"
+                                onclick="showToast('Dispute opened')"
+                            >
+                                Review
+                            </button>
+                        </td>
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- ==================================================
+     DOCUMENTS
+================================================== -->
+
+<section class="page" id="documents">
+
+    <div class="section-title">
+
+        <h2>Documents</h2>
+
+        <p>
+            Centralized document verification and management.
+        </p>
+
+    </div>
+
+
+    <div class="card">
+
+        <div class="card-header">
+
+            <h3>Project Documents</h3>
+
+            <button
+                class="primary-btn"
+                onclick="showToast('Document upload opened')"
+            >
+                + Upload Document
+            </button>
+
+        </div>
+
+
+        <div class="table-wrap">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>Document</th>
+                        <th>Project</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Uploaded</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    <tr>
+                        <td>Acquisition_Notification.pdf</td>
+                        <td>PRJ-2026-001</td>
+                        <td>Notification</td>
+                        <td>
+                            <span class="status green">
+                                Verified
+                            </span>
+                        </td>
+                        <td>04 Sep 2026</td>
+                    </tr>
+
+                    <tr>
+                        <td>Survey_Report_001.pdf</td>
+                        <td>PRJ-2026-002</td>
+                        <td>Survey</td>
+                        <td>
+                            <span class="status green">
+                                Verified
+                            </span>
+                        </td>
+                        <td>03 Sep 2026</td>
+                    </tr>
+
+                    <tr>
+                        <td>Compensation_Report.xlsx</td>
+                        <td>PRJ-2026-003</td>
+                        <td>Finance</td>
+                        <td>
+                            <span class="status yellow">
+                                Pending Review
+                            </span>
+                        </td>
+                        <td>02 Sep 2026</td>
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- ==================================================
+     AI
+================================================== -->
+
+<section class="page" id="ai">
+
+    <div class="section-title">
+
+        <h2>Digital Decision Support</h2>
+
+        <p>
+            Identify acquisition risks and prioritize administrative actions.
+        </p>
+
+    </div>
+
+
+    <div class="grid-2">
+
+        <div class="ai-box">
+
+            <div class="ai-title">
+
+                <div class="ai-icon">
+                    🤖
+                </div>
+
+                <div>
+                    <h3>Project Risk Assessment</h3>
+                    <p style="font-size:11px;color:var(--muted)">
+                        Rule-based digital support prototype
+                    </p>
+                </div>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>Pending Parcels</label>
+
+                <input
+                    type="number"
+                    id="pendingParcels"
+                    value="35"
+                >
+
+            </div>
+
+            <br>
+
+            <div class="form-group">
+
+                <label>Pending Disputes</label>
+
+                <input
+                    type="number"
+                    id="pendingDisputes"
+                    value="12"
+                >
+
+            </div>
+
+            <br>
+
+            <div class="form-group">
+
+                <label>Compensation Pending (%)</label>
+
+                <input
+                    type="number"
+                    id="pendingCompensation"
+                    value="25"
+                >
+
+            </div>
+
+            <br>
+
+            <div class="form-group">
+
+                <label>Project Delay (Days)</label>
+
+                <input
+                    type="number"
+                    id="delayDays"
+                    value="42"
+                >
+
+            </div>
+
+            <br>
+
+            <button
+                class="primary-btn"
+                onclick="calculateRisk()"
+            >
+                Analyze Project
+            </button>
+
+
+            <div class="ai-result" id="aiResult">
+
+                <strong>
+                    Risk analysis will appear here.
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <div class="card-header">
+                <h3>Recommended Actions</h3>
+            </div>
+
+            <div class="alert">
+
+                <div class="alert-icon">⚠️</div>
+
+                <div>
+                    <h4>Prioritize disputed parcels</h4>
+                    <p>
+                        High-priority disputes should be reviewed first.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <div class="alert">
+
+                <div class="alert-icon">💰</div>
+
+                <div>
+                    <h4>Review pending compensation</h4>
+                    <p>
+                        Payment delays may affect project progress.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <div class="alert">
+
+                <div class="alert-icon">📍</div>
+
+                <div>
+                    <h4>Verify pending parcels</h4>
+                    <p>
+                        Complete field verification for unresolved parcels.
+                    </p>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- ==================================================
+     ANALYTICS
+================================================== -->
+
+<section class="page" id="analytics">
+
+    <div class="section-title">
+
+        <h2>Reports & Analytics</h2>
+
+        <p>
+            Performance indicators for land acquisition operations.
+        </p>
+
+    </div>
+
+
+    <div class="kpi-grid">
+
+        <div class="kpi">
+
+            <div class="kpi-label">
+                Avg. Acquisition Time
+            </div>
+
+            <div class="kpi-value">
+                146
+            </div>
+
+            <div class="kpi-change">
+                Days
+            </div>
+
+        </div>
+
+
+        <div class="kpi">
+
+            <div class="kpi-label">
+                Projects On Schedule
+            </div>
+
+            <div class="kpi-value">
+                78.4%
+            </div>
+
+        </div>
+
+
+        <div class="kpi">
+
+            <div class="kpi-label">
+                Dispute Resolution
+            </div>
+
+            <div class="kpi-value">
+                81.2%
+            </div>
+
+        </div>
+
+
+        <div class="kpi">
+
+            <div class="kpi-label">
+                Verification Rate
+            </div>
+
+            <div class="kpi-value">
+                92.6%
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="grid-2">
+
+        <div class="card">
+
+            <div class="card-header">
+                <h3>State-wise Progress</h3>
+            </div>
+
+            <div style="margin-bottom:15px">
+
+                <div style="display:flex;justify-content:space-between;font-size:11px">
+                    <span>Uttar Pradesh</span>
+                    <strong>76%</strong>
+                </div>
+
+                <div class="progress">
+                    <div class="progress-bar" style="width:76%"></div>
+                </div>
+
+            </div>
+
+
+            <div style="margin-bottom:15px">
+
+                <div style="display:flex;justify-content:space-between;font-size:11px">
+                    <span>Gujarat</span>
+                    <strong>82%</strong>
+                </div>
+
+                <div class="progress">
+                    <div class="progress-bar" style="width:82%"></div>
+                </div>
+
+            </div>
+
+
+            <div style="margin-bottom:15px">
+
+                <div style="display:flex;justify-content:space-between;font-size:11px">
+                    <span>Maharashtra</span>
+                    <strong>69%</strong>
+                </div>
+
+                <div class="progress">
+                    <div class="progress-bar" style="width:69%"></div>
+                </div>
+
+            </div>
+
+
+            <div>
+
+                <div style="display:flex;justify-content:space-between;font-size:11px">
+                    <span>Rajasthan</span>
+                    <strong>73%</strong>
+                </div>
+
+                <div class="progress">
+                    <div class="progress-bar" style="width:73%"></div>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="card">
+
+            <div class="card-header">
+                <h3>Monthly Acquisition</h3>
+            </div>
+
+            <div class="chart">
+
+                <div class="bar" style="height:40%">
+                    <span>Jan</span>
+                </div>
+
+                <div class="bar" style="height:55%">
+                    <span>Feb</span>
+                </div>
+
+                <div class="bar" style="height:68%">
+                    <span>Mar</span>
+                </div>
+
+                <div class="bar" style="height:58%">
+                    <span>Apr</span>
+                </div>
+
+                <div class="bar" style="height:80%">
+                    <span>May</span>
+                </div>
+
+                <div class="bar" style="height:88%">
+                    <span>Jun</span>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- ==================================================
+     ALERTS
+================================================== -->
+
+<section class="page" id="alerts">
+
+    <div class="section-title">
+
+        <h2>Alerts & Notifications</h2>
+
+        <p>
+            Important project and workflow notifications.
+        </p>
+
+    </div>
+
+
+    <div class="card">
+
+        <div class="alert">
+
+            <div class="alert-icon">🔴</div>
+
+            <div>
+
+                <h4>High Priority Dispute</h4>
+
+                <p>
+                    DSP-2026-021 requires immediate review.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="alert">
+
+            <div class="alert-icon">⚠️</div>
+
+            <div>
+
+                <h4>Project Delay</h4>
+
+                <p>
+                    Eastern Freight Corridor is 18 days behind schedule.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="alert">
+
+            <div class="alert-icon">💰</div>
+
+            <div>
+
+                <h4>Compensation Pending</h4>
+
+                <p>
+                    48 compensation records require verification.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="alert">
+
+            <div class="alert-icon">📄</div>
+
+            <div>
+
+                <h4>Document Verification</h4>
+
+                <p>
+                    16 uploaded documents are waiting for review.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- ==================================================
+     USERS
+================================================== -->
+
+<section class="page" id="users">
+
+    <div class="section-title">
+
+        <h2>Users & Roles</h2>
+
+        <p>
+            Role-based access management.
+        </p>
+
+    </div>
+
+
+    <div class="card">
+
+        <div class="card-header">
+
+            <h3>System Users</h3>
+
+            <button
+                class="primary-btn"
+                onclick="showToast('User creation form opened')"
+            >
+                + Add User
+            </button>
+
+        </div>
+
+
+        <div class="table-wrap">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+                        <th>Name</th>
+                        <th>Department</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Last Login</th>
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    <tr>
+                        <td>Rajiv Sharma</td>
+                        <td>State Authority</td>
+                        <td>State Officer</td>
+                        <td>
+                            <span class="status green">
+                                Active
+                            </span>
+                        </td>
+                        <td>Today 09:42</td>
+                    </tr>
+
+                    <tr>
+                        <td>Anita Verma</td>
+                        <td>Revenue Department</td>
+                        <td>District Officer</td>
+                        <td>
+                            <span class="status green">
+                                Active
+                            </span>
+                        </td>
+                        <td>Today 08:55</td>
+                    </tr>
+
+                    <tr>
+                        <td>Vikram Singh</td>
+                        <td>Survey Department</td>
+                        <td>Survey Officer</td>
+                        <td>
+                            <span class="status green">
+                                Active
+                            </span>
+                        </td>
+                        <td>Yesterday</td>
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- ==================================================
+     AUDIT
+================================================== -->
+
+<section class="page" id="audit">
+
+    <div class="section-title">
+
+        <h2>Audit Trail</h2>
+
+        <p>
+            Transparent record of system activities.
+        </p>
+
+    </div>
+
+
+    <div class="card">
+
+        <div class="timeline">
+
+            <div class="timeline-item">
+
+                <h4>Parcel PAR-001284 updated</h4>
+
+                <p>
+                    Verification status changed to Verified.
+                </p>
+
+                <small>
+                    Admin • Today 10:15
+                </small>
+
+            </div>
+
+
+            <div class="timeline-item">
+
+                <h4>Compensation record approved</h4>
+
+                <p>
+                    Compensation payment approved.
+                </p>
+
+                <small>
+                    Finance Officer • Today 09:52
+                </small>
+
+            </div>
+
+
+            <div class="timeline-item">
+
+                <h4>Dispute DSP-2026-021 escalated</h4>
+
+                <p>
+                    Case priority changed from Medium to High.
+                </p>
+
+                <small>
+                    District Officer • Today 09:21
+                </small>
+
+            </div>
+
+
+            <div class="timeline-item">
+
+                <h4>GIS survey uploaded</h4>
+
+                <p>
+                    New survey layer added to project.
+                </p>
+
+                <small>
+                    Survey Officer • Yesterday 17:42
+                </small>
+
+            </div>
+
+
+            <div class="timeline-item">
+
+                <h4>Project PRJ-2026-001 created</h4>
+
+                <p>
+                    New acquisition project registered.
+                </p>
+
+                <small>
+                    Admin • Yesterday 15:18
+                </small>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- ==================================================
+     SETTINGS
+================================================== -->
+
+<section class="page" id="settings">
+
+    <div class="section-title">
+
+        <h2>Settings</h2>
+
+        <p>
+            Configure system preferences.
+        </p>
+
+    </div>
+
+
+    <div class="card">
+
+        <div style="
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            padding:15px 0;
+            border-bottom:1px solid var(--border);
+        ">
+
+            <div>
+
+                <strong style="font-size:13px">
+                    Dark Mode
+                </strong>
+
+                <p style="font-size:11px;color:var(--muted);margin-top:4px">
+                    Switch between light and dark themes.
+                </p>
+
+            </div>
+
+            <button
+                class="primary-btn"
+                onclick="toggleDark()"
+            >
+                Toggle Theme
+            </button>
+
+        </div>
+
+
+        <div style="
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            padding:15px 0;
+            border-bottom:1px solid var(--border);
+        ">
+
+            <div>
+
+                <strong style="font-size:13px">
+                    Notifications
+                </strong>
+
+                <p style="font-size:11px;color:var(--muted);margin-top:4px">
+                    Receive project and workflow alerts.
+                </p>
+
+            </div>
+
+            <button
+                class="secondary-btn"
+                onclick="showToast('Notifications enabled')"
+            >
+                Enabled
+            </button>
+
+        </div>
+
+
+        <div style="
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            padding:15px 0;
+        ">
+
+            <div>
+
+                <strong style="font-size:13px">
+                    System Status
+                </strong>
+
+                <p style="font-size:11px;color:var(--muted);margin-top:4px">
+                    Current application status.
+                </p>
+
+            </div>
+
+            <span class="status green">
+                Operational
+            </span>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+</div>
+</main>
+
+</div>
+
+
+<!-- =========================
+     PROJECT MODAL
+========================= -->
+
+<div class="modal" id="projectModal">
+
+    <div class="modal-box">
+
+        <div class="modal-header">
+
+            <h3>Add New Project</h3>
+
+            <button
+                class="close"
+                onclick="closeProjectModal()"
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <form onsubmit="addProject(event)">
+
+            <div class="form-grid">
+
+                <div class="form-group">
+
+                    <label>Project ID</label>
+
+                    <input
+                        id="projectId"
+                        required
+                        placeholder="PRJ-2026-004"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>Project Name</label>
+
+                    <input
+                        id="projectName"
+                        required
+                        placeholder="Project name"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>State</label>
+
+                    <select id="projectState">
+
+                        <option>Uttar Pradesh</option>
+                        <option>Gujarat</option>
+                        <option>Maharashtra</option>
+                        <option>Rajasthan</option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>District</label>
+
+                    <input
+                        id="projectDistrict"
+                        required
+                        placeholder="District"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>Department</label>
+
+                    <input
+                        id="projectDepartment"
+                        required
+                        placeholder="Department"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>Project Type</label>
+
+                    <select id="projectType">
+
+                        <option>Highway</option>
+                        <option>Railway</option>
+                        <option>Industrial</option>
+                        <option>Metro</option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>Land Required (Ha)</label>
+
+                    <input
+                        id="landRequired"
+                        type="number"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>Land Acquired (Ha)</label>
+
+                    <input
+                        id="landAcquired"
+                        type="number"
+                        required
+                    >
+
+                </div>
+
+            </div>
+
+
+            <div style="
+                display:flex;
+                justify-content:flex-end;
+                gap:10px;
+                margin-top:20px;
+            ">
+
+                <button
+                    type="button"
+                    class="secondary-btn"
+                    onclick="closeProjectModal()"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="submit"
+                    class="primary-btn"
+                >
+                    Create Project
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<!-- =========================
+     PARCEL MODAL
+========================= -->
+
+<div class="modal" id="parcelModal">
+
+    <div class="modal-box">
+
+        <div class="modal-header">
+
+            <h3>Parcel Details</h3>
+
+            <button
+                class="close"
+                onclick="closeParcelModal()"
+            >
+                ×
+            </button>
+
+        </div>
+
+        <div id="parcelDetails"></div>
+
+    </div>
+
+</div>
+
+
+<div class="toast" id="toast">
+    Action completed successfully.
+</div>
+
+
+<script>
+
+/* ========================================
+   PAGE NAVIGATION
+======================================== */
+
+function showPage(pageId, element){
+
+    document.querySelectorAll(".page")
+        .forEach(page => {
+            page.classList.remove("active");
+        });
+
+    const page = document.getElementById(pageId);
+
+    if(page){
+        page.classList.add("active");
+    }
+
+
+    document.querySelectorAll(".nav-item")
+        .forEach(item => {
+            item.classList.remove("active");
+        });
+
+
+    if(element){
+        element.classList.add("active");
+    }
+
+
+    const titles = {
+
+        dashboard:
+            "Real-Time National Land Acquisition & Management System",
+
+        projects:
+            "Land Acquisition Projects",
+
+        gis:
+            "GIS Land Acquisition Map",
+
+        parcels:
+            "Land Parcels",
+
+        workflow:
+            "Acquisition Workflow",
+
+        compensation:
+            "Compensation Management",
+
+        disputes:
+            "Dispute Management",
+
+        documents:
+            "Documents",
+
+        ai:
+            "Digital Decision Support",
+
+        analytics:
+            "Reports & Analytics",
+
+        alerts:
+            "Alerts & Notifications",
+
+        users:
+            "Users & Roles",
+
+        audit:
+            "Audit Trail",
+
+        settings:
+            "Settings"
+
+    };
+
+
+    document.getElementById("pageTitle").textContent =
+        titles[pageId] || "National Land System";
+
+
+    document.getElementById("sidebar")
+        .classList.remove("open");
+
+}
+
+
+/* ========================================
+   MOBILE SIDEBAR
+======================================== */
+
+function toggleSidebar(){
+
+    document
+        .getElementById("sidebar")
+        .classList.toggle("open");
+
+}
+
+
+/* ========================================
+   DARK MODE
+======================================== */
+
+function toggleDark(){
+
+    document.body.classList.toggle("dark");
+
+    const enabled =
+        document.body.classList.contains("dark");
+
+    localStorage.setItem(
+        "darkMode",
+        enabled
+    );
+
+    showToast(
+        enabled
+        ? "Dark mode enabled"
+        : "Light mode enabled"
+    );
+
+}
+
+
+if(
+    localStorage.getItem("darkMode") === "true"
+){
+
+    document.body.classList.add("dark");
+
+}
+
+
+/* ========================================
+   TOAST
+======================================== */
+
+let toastTimer;
+
+function showToast(message){
+
+    const toast =
+        document.getElementById("toast");
+
+    toast.textContent = message;
+
+    toast.classList.add("show");
+
+    clearTimeout(toastTimer);
+
+    toastTimer = setTimeout(() => {
+
+        toast.classList.remove("show");
+
+    },3000);
+
+}
+
+
+/* ========================================
+   PROJECT MODAL
+======================================== */
+
+function openProjectModal(){
+
+    document
+        .getElementById("projectModal")
+        .classList.add("show");
+
+}
+
+
+function closeProjectModal(){
+
+    document
+        .getElementById("projectModal")
+        .classList.remove("show");
+
+}
+
+
+/* ========================================
+   ADD PROJECT
+======================================== */
+
+function addProject(event){
+
+    event.preventDefault();
+
+
+    const id =
+        document.getElementById("projectId").value;
+
+    const name =
+        document.getElementById("projectName").value;
+
+    const state =
+        document.getElementById("projectState").value;
+
+    const district =
+        document.getElementById("projectDistrict").value;
+
+    const department =
+        document.getElementById("projectDepartment").value;
+
+    const type =
+        document.getElementById("projectType").value;
+
+    const required =
+        Number(
+            document.getElementById("landRequired").value
+        );
+
+    const acquired =
+        Number(
+            document.getElementById("landAcquired").value
+        );
+
+
+    let progress = 0;
+
+    if(required > 0){
+
+        progress =
+            Math.round(
+                acquired / required * 100
+            );
+
+    }
+
+
+    if(progress > 100){
+
+        progress = 100;
+
+    }
+
+
+    const projectGrid =
+        document.getElementById("projectGrid");
+
+
+    const card =
+        document.createElement("div");
+
+    card.className = "project-card";
+
+
+    card.innerHTML = `
+
+        <div class="project-id">
+            ${id}
+        </div>
+
+        <h3>
+            ${name}
+        </h3>
+
+        <span class="status green">
+            On Track
+        </span>
+
+        <div class="project-info">
+
+            <div class="info-item">
+                <span>State</span>
+                <strong>${state}</strong>
+            </div>
+
+            <div class="info-item">
+                <span>District</span>
+                <strong>${district}</strong>
+            </div>
+
+            <div class="info-item">
+                <span>Land Required</span>
+                <strong>${required} Ha</strong>
+            </div>
+
+            <div class="info-item">
+                <span>Acquired</span>
+                <strong>${acquired} Ha</strong>
+            </div>
+
+        </div>
+
+        <div style="
+            font-size:11px;
+            color:var(--muted)
+        ">
+            Acquisition Progress
+        </div>
+
+        <div class="progress">
+
+            <div
+                class="progress-bar"
+                style="width:${progress}%"
+            ></div>
+
+        </div>
+
+        <div style="font-size:11px">
+            ${progress}% completed
+        </div>
+
+    `;
+
+
+    projectGrid.appendChild(card);
+
+
+    closeProjectModal();
+
+    document.querySelector("form").reset();
+
+
+    showToast(
+        "Project created successfully"
+    );
+
+
+    updateProjectCount();
+
+}
+
+
+/* ========================================
+   PROJECT COUNT
+======================================== */
+
+function updateProjectCount(){
+
+    const cards =
+        document.querySelectorAll(
+            "#projectGrid .project-card"
+        );
+
+    const count =
+        cards.length;
+
+
+    /*
+        Demo value:
+        existing dashboard has
+        large national number.
+    */
+
+    console.log(
+        "Projects displayed:",
+        count
+    );
+
+}
+
+
+/* ========================================
+   DASHBOARD FILTER
+======================================== */
+
+function filterDashboard(){
+
+    const state =
+        document
+        .getElementById("stateFilter")
+        .value;
+
+    const type =
+        document
+        .getElementById("typeFilter")
+        .value;
+
+
+    const rows =
+        document.querySelectorAll(
+            "#dashboardProjects tr"
+        );
+
+
+    rows.forEach(row => {
+
+        const rowState =
+            row.children[2]?.textContent.trim();
+
+        const rowType =
+            row.children[3]?.textContent.trim();
+
+
+        const stateMatch =
+            !state ||
+            rowState === state;
+
+        const typeMatch =
+            !type ||
+            rowType === type;
+
+
+        row.style.display =
+            stateMatch && typeMatch
+            ? ""
+            : "none";
+
+    });
+
+}
+
+
+/* ========================================
+   GLOBAL SEARCH
+======================================== */
+
+function globalSearch(){
+
+    const value =
+        document
+        .getElementById("globalSearch")
+        .value
+        .toLowerCase()
+        .trim();
+
+
+    if(!value){
+
+        document
+        .querySelectorAll(
+            ".project-card"
+        )
+        .forEach(card => {
+
+            card.style.display = "";
+
+        });
+
+        return;
+
+    }
+
+
+    document
+    .querySelectorAll(
+        ".project-card"
+    )
+    .forEach(card => {
+
+        const text =
+            card.textContent.toLowerCase();
+
+        card.style.display =
+            text.includes(value)
+            ? ""
+            : "none";
+
+    });
+
+}
+
+
+/* ========================================
+   PARCEL SEARCH
+======================================== */
+
+function searchParcels(){
+
+    const value =
+        document
+        .getElementById("parcelSearch")
+        .value
+        .toLowerCase();
+
+
+    const rows =
+        document.querySelectorAll(
+            "#parcelTable tbody tr"
+        );
+
+
+    rows.forEach(row => {
+
+        row.style.display =
+            row.textContent
+            .toLowerCase()
+            .includes(value)
+            ? ""
+            : "none";
+
+    });
+
+}
+
+
+/* ========================================
+   PARCEL DETAILS
+======================================== */
+
+function viewParcel(parcelId){
+
+    const details =
+        document.getElementById(
+            "parcelDetails"
+        );
+
+
+    details.innerHTML = `
+
+        <div class="project-info">
+
+            <div class="info-item">
+                <span>Parcel ID</span>
+                <strong>${parcelId}</strong>
+            </div>
+
+            <div class="info-item">
+                <span>Project</span>
+                <strong>PRJ-2026-001</strong>
+            </div>
+
+            <div class="info-item">
+                <span>District</span>
+                <strong>Bareilly</strong>
+            </div>
+
+            <div class="info-item">
+                <span>Area</span>
+                <strong>2.4 Ha</strong>
+            </div>
+
+            <div class="info-item">
+                <span>Verification</span>
+                <strong>Verified</strong>
+            </div>
+
+            <div class="info-item">
+                <span>Status</span>
+                <strong>Acquired</strong>
+            </div>
+
+        </div>
+
+
+        <div style="
+            margin-top:20px;
+            padding:15px;
+            background:var(--secondary);
+            border-radius:8px;
+        ">
+
+            <strong style="font-size:13px">
+                GIS Coordinates
+            </strong>
+
+            <p style="
+                margin-top:8px;
+                font-size:12px;
+                color:var(--muted)
+            ">
+                Latitude: 28.3670<br>
+                Longitude: 79.4300
+            </p>
+
+        </div>
+
+    `;
+
+
+    document
+        .getElementById("parcelModal")
+        .classList.add("show");
+
+}
+
+
+function closeParcelModal(){
+
+    document
+        .getElementById("parcelModal")
+        .classList.remove("show");
+
+}
+
+
+/* ========================================
+   DIGITAL SUPPORT / RISK
+======================================== */
+
+function calculateRisk(){
+
+    const parcels =
+        Number(
+            document
+            .getElementById("pendingParcels")
+            .value
+        );
+
+    const disputes =
+        Number(
+            document
+            .getElementById("pendingDisputes")
+            .value
+        );
+
+    const compensation =
+        Number(
+            document
+            .getElementById("pendingCompensation")
+            .value
+        );
+
+    const delay =
+        Number(
+            document
+            .getElementById("delayDays")
+            .value
+        );
+
+
+    let score = 0;
+
+
+    if(parcels >= 30){
+
+        score += 25;
+
+    }
+    else if(parcels >= 15){
+
+        score += 15;
+
+    }
+
+
+    if(disputes >= 10){
+
+        score += 30;
+
+    }
+    else if(disputes >= 5){
+
+        score += 15;
+
+    }
+
+
+    if(compensation >= 25){
+
+        score += 20;
+
+    }
+    else if(compensation >= 10){
+
+        score += 10;
+
+    }
+
+
+    if(delay >= 30){
+
+        score += 25;
+
+    }
+    else if(delay >= 15){
+
+        score += 15;
+
+    }
+
+
+    let risk;
+    let action;
+
+
+    if(score >= 60){
+
+        risk = "HIGH";
+
+        action =
+            "Immediate review recommended. Prioritize disputes, pending verification and compensation.";
+
+    }
+    else if(score >= 35){
+
+        risk = "MEDIUM";
+
+        action =
+            "Monitor the project closely and resolve pending workflow items.";
+
+    }
+    else{
+
+        risk = "LOW";
+
+        action =
+            "Project appears stable. Continue regular monitoring.";
+
+    }
+
+
+    document
+    .getElementById("aiResult")
+    .innerHTML = `
+
+        <div style="
+            font-size:12px;
+            color:var(--muted);
+            margin-bottom:6px;
+        ">
+            Risk Score
+        </div>
+
+        <div style="
+            font-size:25px;
+            font-weight:bold;
+            margin-bottom:8px;
+        ">
+            ${score}/100
+        </div>
+
+        <span class="
+            status
+            ${
+                risk === "HIGH"
+                ? "red"
+                : risk === "MEDIUM"
+                ? "yellow"
+                : "green"
+            }
+        ">
+            ${risk} RISK
+        </span>
+
+        <p style="
+            font-size:12px;
+            margin-top:12px;
+            line-height:1.6;
+        ">
+            ${action}
+        </p>
+
+    `;
+
+}
+
+
+/* ========================================
+   CLOSE MODALS WHEN OUTSIDE CLICK
+======================================== */
+
+window.addEventListener(
+    "click",
+    function(event){
+
+        const projectModal =
+            document.getElementById(
+                "projectModal"
+            );
+
+        const parcelModal =
+            document.getElementById(
+                "parcelModal"
+            );
+
+
+        if(event.target === projectModal){
+
+            closeProjectModal();
+
+        }
+
+
+        if(event.target === parcelModal){
+
+            closeParcelModal();
+
+        }
+
+    }
+);
+
+
+/* ========================================
+   ESCAPE KEY
+======================================== */
+
+document.addEventListener(
+    "keydown",
+    function(event){
+
+        if(event.key === "Escape"){
+
+            closeProjectModal();
+
+            closeParcelModal();
+
+        }
+
+    }
+);
+
+
+/* ========================================
+   DEMO STARTUP
+======================================== */
+
+console.log(
+    "National Land Acquisition System loaded successfully."
+);
+
+console.log(
+    "Frontend ready for REST API integration."
+);
+
+</script>
+
+</body>
+</html>
