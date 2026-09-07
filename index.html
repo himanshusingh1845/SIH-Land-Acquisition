@@ -373,6 +373,73 @@
             z-index: 2;
         }
 
+        /* HERO COLORFUL INDIA MAP */
+        .hero-content{
+            display:grid;
+            grid-template-columns:minmax(0,1.15fr) minmax(330px,.85fr);
+            gap:22px;
+            align-items:center;
+        }
+        .hero-copy{min-width:0}
+        .hero-map-visual{
+            position:relative;
+            min-height:265px;
+            border-radius:22px;
+            overflow:hidden;
+            border:1px solid rgba(255,255,255,.16);
+            background:
+                radial-gradient(circle at 20% 15%, rgba(62,168,255,.22), transparent 32%),
+                radial-gradient(circle at 80% 80%, rgba(138,82,255,.18), transparent 38%),
+                linear-gradient(135deg, rgba(7,31,62,.88), rgba(7,20,45,.94));
+            box-shadow:inset 0 0 55px rgba(45,147,255,.09), 0 14px 34px rgba(0,0,0,.22);
+        }
+        .hero-map-visual::before{
+            content:"";
+            position:absolute; inset:0;
+            background-image:
+                linear-gradient(rgba(117,184,255,.06) 1px,transparent 1px),
+                linear-gradient(90deg,rgba(117,184,255,.06) 1px,transparent 1px);
+            background-size:24px 24px;
+            opacity:.8;
+            pointer-events:none;
+        }
+        .hero-map-visual::after{
+            content:"";
+            position:absolute; inset:-20%;
+            background:radial-gradient(ellipse at center, transparent 36%, rgba(2,9,25,.45) 82%);
+            pointer-events:none;
+        }
+        .hero-map-visual svg{position:absolute; inset:6px; width:calc(100% - 12px); height:calc(100% - 12px); z-index:1}
+        .india-outline{fill:url(#indiaRainbow);stroke:rgba(231,245,255,.9);stroke-width:2.2;filter:drop-shadow(0 0 9px rgba(70,168,255,.42))}
+        .state-line{fill:none;stroke:rgba(255,255,255,.42);stroke-width:1.05;stroke-linecap:round;stroke-linejoin:round}
+        .state-line-soft{fill:none;stroke:rgba(255,255,255,.22);stroke-width:.8;stroke-linecap:round;stroke-linejoin:round}
+        .map-route{fill:none;stroke:rgba(255,255,255,.7);stroke-width:1.4;stroke-dasharray:4 6;animation:routeDash 6s linear infinite}
+        @keyframes routeDash{to{stroke-dashoffset:-80}}
+        .map-node{fill:#fff;stroke:#1ec8ff;stroke-width:2.8;filter:drop-shadow(0 0 4px rgba(30,200,255,.9))}
+        .map-pulse{fill:none;stroke:#fff;stroke-width:1.4;opacity:.75;animation:mapPulse 2.1s infinite}
+        @keyframes mapPulse{0%{r:6;opacity:.85}100%{r:21;opacity:0}}
+        .map-label{font-size:8.5px;fill:#f4fbff;font-weight:800;letter-spacing:.45px;text-shadow:0 1px 2px #000}
+        .map-title{
+            position:absolute;left:15px;top:13px;z-index:4;
+            display:flex;align-items:center;gap:8px;
+            font-size:10px;font-weight:800;letter-spacing:.85px;color:#eef8ff;
+            background:rgba(7,24,50,.58);border:1px solid rgba(145,203,255,.16);
+            padding:7px 10px;border-radius:11px;backdrop-filter:blur(8px);
+        }
+        .map-title i{color:#44c8ff}
+        .map-live{
+            position:absolute;right:13px;bottom:13px;z-index:4;
+            background:rgba(6,23,49,.72);border:1px solid rgba(103,201,255,.22);
+            padding:7px 10px;border-radius:11px;font-size:9px;color:#e9f8ff;
+            backdrop-filter:blur(8px);box-shadow:0 8px 18px rgba(0,0,0,.18)
+        }
+        .map-legend{position:absolute;left:15px;bottom:13px;z-index:4;display:flex;gap:6px;align-items:center}
+        .legend-dot{width:7px;height:7px;border-radius:50%;box-shadow:0 0 7px currentColor}
+        @media(max-width:900px){
+            .hero-content{grid-template-columns:1fr}
+            .hero-map-visual{min-height:235px}
+        }
+
         .hero-badge {
             display: inline-flex;
             align-items: center;
@@ -1209,6 +1276,35 @@
 /* LOGIN OVERLAY */
 .login-screen{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(circle at 15% 15%,rgba(87,214,141,.25),transparent 28%),linear-gradient(135deg,#031b14,#0b3d2e 55%,#06251c);overflow:auto}.login-screen::before{content:"";position:absolute;width:420px;height:420px;border-radius:50%;background:rgba(87,214,141,.12);filter:blur(20px);top:-140px;right:-100px}.login-box{position:relative;width:min(960px,100%);display:grid;grid-template-columns:1.1fr .9fr;background:rgba(255,255,255,.96);border:1px solid rgba(123,211,137,.35);border-radius:28px;overflow:hidden;box-shadow:0 30px 90px rgba(0,0,0,.4)}.login-brand{padding:48px;background:linear-gradient(145deg,#06291f,#0b3d2e,#198754);color:#fff;position:relative}.login-brand h1{font-size:32px;line-height:1.15;margin:18px 0 12px}.login-brand p{color:rgba(255,255,255,.72);font-size:13px;line-height:1.7}.login-feature{margin-top:30px;display:flex;gap:12px;align-items:center;font-size:12px}.login-feature i{width:36px;height:36px;border-radius:12px;background:rgba(255,255,255,.12);display:grid;place-items:center;color:#7bf0a4}.login-form-wrap{padding:48px}.login-form-wrap h2{font-size:25px;margin-bottom:7px}.login-form-wrap>p{font-size:12px;color:#60756b;margin-bottom:25px}.login-group{margin-bottom:16px}.login-group label{display:block;font-size:11px;font-weight:700;margin-bottom:7px}.login-group input{width:100%;padding:13px 14px;border:1px solid #dbe9e0;border-radius:12px;font-size:13px;outline:none}.login-group input:focus{border-color:#57d68d;box-shadow:0 0 0 4px rgba(87,214,141,.13)}.login-submit{width:100%;padding:13px;border:0;border-radius:12px;color:#fff;font-weight:800;background:linear-gradient(135deg,#0b3d2e,#198754,#57d68d);box-shadow:0 12px 25px rgba(25,135,84,.22);margin-top:4px}.login-error{display:none;color:#d92855;background:rgba(239,71,111,.1);padding:9px 11px;border-radius:10px;font-size:11px;margin-bottom:14px}.logout-btn{border:none;background:#ef476f;color:white;padding:7px 10px;border-radius:10px;font-size:10px;font-weight:700}@media(max-width:760px){.login-box{grid-template-columns:1fr}.login-brand{padding:30px}.login-form-wrap{padding:30px}.login-brand h1{font-size:26px}}
 
+
+/* =========================================================
+   SMART NOTIFICATIONS
+========================================================= */
+.notification-wrap{position:relative}
+.notification-bell{position:relative}
+.notification-count{position:absolute;top:-6px;right:-7px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:#ef476f;color:#fff;font-size:9px;font-weight:800;display:none;align-items:center;justify-content:center;border:2px solid var(--surface)}
+.notification-count.show{display:flex}
+.notification-panel{position:absolute;right:0;top:calc(100% + 12px);width:min(390px,calc(100vw - 28px));max-height:520px;background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:0 20px 50px rgba(0,0,0,.22);z-index:9999;overflow:hidden;display:none}
+.notification-panel.open{display:block}
+.notification-head{display:flex;align-items:center;justify-content:space-between;padding:15px 16px;border-bottom:1px solid var(--border)}
+.notification-head h3{margin:0;font-size:14px}
+.notification-actions{display:flex;gap:8px}
+.notification-actions button{border:0;background:transparent;color:var(--accent);font-size:10px;font-weight:700;cursor:pointer}
+.notification-list{max-height:400px;overflow:auto;padding:8px}
+.notification-item{display:flex;gap:11px;padding:12px;border-radius:12px;cursor:pointer;border:1px solid transparent;margin-bottom:5px}
+.notification-item:hover{background:var(--soft);border-color:var(--border)}
+.notification-item.unread{background:rgba(255,159,67,.08)}
+.notification-icon{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex:0 0 34px}
+.notification-icon.danger{background:rgba(239,71,111,.14);color:#ef476f}
+.notification-icon.warning{background:rgba(255,183,3,.15);color:#d98d00}
+.notification-icon.info{background:rgba(70,130,180,.13);color:#4682b4}
+.notification-content{min-width:0;flex:1}
+.notification-title{font-size:11px;font-weight:800;margin-bottom:3px}
+.notification-message{font-size:10px;line-height:1.45;color:var(--text-muted)}
+.notification-meta{font-size:9px;color:var(--text-muted);margin-top:5px}
+.notification-empty{text-align:center;padding:42px 15px;color:var(--text-muted);font-size:11px}
+.notification-empty i{font-size:28px;margin-bottom:10px;display:block;opacity:.55}
+
 </style>
 </head>
 
@@ -1357,6 +1453,24 @@
                 <i class="fa-solid fa-rotate"></i>
             </button>
 
+            <div class="notification-wrap">
+                <button class="icon-btn notification-bell" id="notificationBell" title="Notifications" type="button">
+                    <i class="fa-solid fa-bell"></i>
+                    <span class="notification-count" id="notificationCount">0</span>
+                </button>
+
+                <div class="notification-panel" id="notificationPanel">
+                    <div class="notification-head">
+                        <h3><i class="fa-solid fa-bell"></i> Smart Alerts</h3>
+                        <div class="notification-actions">
+                            <button type="button" id="markAllReadBtn">Mark all read</button>
+                            <button type="button" id="clearAlertsBtn">Clear</button>
+                        </div>
+                    </div>
+                    <div class="notification-list" id="notificationList"></div>
+                </div>
+            </div>
+
             <button class="icon-btn" id="themeToggle" title="Toggle theme">
                 <i class="fa-solid fa-moon"></i>
             </button>
@@ -1392,6 +1506,8 @@
 
                 <div class="hero-content">
 
+                    <div class="hero-copy">
+
                     <div class="hero-badge">
                         <span class="pulse-dot"></span>
                         SYSTEM LIVE
@@ -1426,6 +1542,56 @@
                             <span>CASES TRACKED</span>
                         </div>
 
+                    </div>
+
+                    </div>
+
+                    <div class="hero-map-visual" aria-label="Colorful India acquisition intelligence map">
+                        <div class="map-title"><i class="fa-solid fa-map-location-dot"></i> NATIONAL PROJECT INTELLIGENCE</div>
+                        <svg viewBox="0 0 460 290" role="img" aria-label="Colorful map of India with project monitoring nodes">
+                            <defs>
+                                <linearGradient id="indiaRainbow" x1="0" y1="0" x2="1" y2="1">
+                                    <stop offset="0%" stop-color="#26c6ff"/>
+                                    <stop offset="20%" stop-color="#4f7cff"/>
+                                    <stop offset="42%" stop-color="#9b5cff"/>
+                                    <stop offset="62%" stop-color="#ef5bb7"/>
+                                    <stop offset="79%" stop-color="#ff9d3d"/>
+                                    <stop offset="100%" stop-color="#ffd34f"/>
+                                </linearGradient>
+                                <radialGradient id="glow" cx="50%" cy="45%" r="55%"><stop offset="0%" stop-color="#fff" stop-opacity=".18"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></radialGradient>
+                            </defs>
+                            <ellipse cx="260" cy="148" rx="142" ry="132" fill="url(#glow)"/>
+                            <!-- stylized India silhouette -->
+                            <path class="india-outline" d="M205 25 L235 37 L256 57 L276 73 L296 88 L309 109 L300 126 L316 144 L307 161 L320 178 L306 198 L296 225 L278 244 L266 270 L249 247 L232 230 L216 207 L201 185 L187 162 L172 140 L159 116 L164 93 L177 73 L185 48 Z"/>
+                            <path class="india-outline" d="M258 271 L270 286 L256 288 Z"/>
+                            <!-- colourful state-style divisions -->
+                            <path class="state-line" d="M177 73 Q205 87 230 83 Q259 80 286 95"/>
+                            <path class="state-line" d="M164 93 Q196 112 224 105 Q259 99 309 109"/>
+                            <path class="state-line" d="M159 116 Q191 131 219 126 Q261 120 300 126"/>
+                            <path class="state-line" d="M172 140 Q204 153 234 146 Q270 138 316 144"/>
+                            <path class="state-line" d="M187 162 Q220 176 248 168 Q282 160 307 161"/>
+                            <path class="state-line" d="M201 185 Q231 196 260 190 Q292 184 320 178"/>
+                            <path class="state-line" d="M216 207 Q246 216 276 210 Q294 207 306 198"/>
+                            <path class="state-line-soft" d="M205 25 Q199 77 219 126 Q235 171 232 230"/>
+                            <path class="state-line-soft" d="M235 37 Q230 81 248 125 Q264 172 249 247"/>
+                            <path class="state-line-soft" d="M276 73 Q262 112 278 157 Q294 193 278 244"/>
+                            <!-- intelligence routes -->
+                            <path class="map-route" d="M213 68 Q245 115 270 156 Q253 196 266 232"/>
+                            <path class="map-route" d="M183 110 Q230 92 291 118"/>
+                            <path class="map-route" d="M200 146 Q246 132 299 160"/>
+                            <!-- nodes -->
+                            <g>
+                                <circle class="map-node" cx="213" cy="68" r="4"/><circle class="map-pulse" cx="213" cy="68" r="7"/><text class="map-label" x="180" y="56">DELHI</text>
+                                <circle class="map-node" cx="183" cy="110" r="4"/><circle class="map-pulse" cx="183" cy="110" r="7"/><text class="map-label" x="138" y="126">RAJASTHAN</text>
+                                <circle class="map-node" cx="291" cy="118" r="4"/><circle class="map-pulse" cx="291" cy="118" r="7"/><text class="map-label" x="298" y="108">BENGAL</text>
+                                <circle class="map-node" cx="270" cy="156" r="4"/><circle class="map-pulse" cx="270" cy="156" r="7"/><text class="map-label" x="278" y="171">ODISHA</text>
+                                <circle class="map-node" cx="266" cy="232" r="4"/><circle class="map-pulse" cx="266" cy="232" r="7"/><text class="map-label" x="276" y="238">TAMIL NADU</text>
+                            </g>
+                        </svg>
+                        <div class="map-legend">
+                            <span class="legend-dot" style="color:#26c6ff"></span><span class="legend-dot" style="color:#9b5cff"></span><span class="legend-dot" style="color:#ef5bb7"></span><span class="legend-dot" style="color:#ffbf4d"></span>
+                        </div>
+                        <div class="map-live"><i class="fa-solid fa-circle" style="font-size:6px;color:#4de5a8"></i> LIVE • 500 PROJECTS MONITORED</div>
                     </div>
 
                 </div>
@@ -2086,8 +2252,14 @@
                     <option>Completed</option>
                 </select>
 
+                <select class="select" id="projectPageSize" onchange="applyProjectFilters()">
+                    <option value="10" selected>10 per page</option>
+                    <option value="25">25 per page</option>
+                    <option value="50">50 per page</option>
+                </select>
+
                 <button class="btn btn-light"
-                        onclick="renderProjects()">
+                        onclick="applyProjectFilters()">
                     Apply
                 </button>
 
@@ -2117,6 +2289,8 @@
                     </table>
 
                 </div>
+
+                <div class="project-pagination" id="projectPagination"></div>
 
             </div>
 
@@ -2429,11 +2603,18 @@
                     <p>Digital document management</p>
                 </div>
 
-                <button class="btn btn-primary">
+                <input type="file" id="documentUploadInput" hidden
+                       accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg">
+                <button class="btn btn-primary" onclick="document.getElementById('documentUploadInput').click()">
                     <i class="fa-solid fa-upload"></i>
                     Upload Document
                 </button>
 
+            </div>
+
+            <div class="document-upload-status" id="documentUploadStatus">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <span>Select a document to upload. No extra document details are required.</span>
             </div>
 
             <div class="alert-grid">
@@ -2490,45 +2671,83 @@
 
             <div class="card" style="padding:25px;">
 
+                <div class="card-head" style="margin-bottom:22px;gap:15px;flex-wrap:wrap;">
+                    <div>
+                        <h3 style="margin:0;">Live Project Risk Assessment</h3>
+                        <p style="margin:5px 0 0;">Select a project and calculate its current decision-support risk from live system data.</p>
+                    </div>
+                    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                        <select class="select" id="aiProjectSelect" style="min-width:260px;"></select>
+                        <button class="primary-btn" type="button" onclick="calculateSelectedProjectRisk()">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Calculate Risk
+                        </button>
+                    </div>
+                </div>
+
                 <div class="mini-grid">
 
                     <div class="mini-card">
                         <h4>LEGAL RISK</h4>
-                        <strong>68%</strong>
-                        <span class="badge red">HIGH</span>
+                        <strong id="aiLegalRisk">--%</strong>
+                        <span id="aiLegalBadge" class="badge yellow">WAITING</span>
                     </div>
 
                     <div class="mini-card">
                         <h4>LAND RECORD RISK</h4>
-                        <strong>43%</strong>
-                        <span class="badge yellow">MEDIUM</span>
+                        <strong id="aiLandRisk">--%</strong>
+                        <span id="aiLandBadge" class="badge yellow">WAITING</span>
                     </div>
 
                     <div class="mini-card">
                         <h4>DELAY PROBABILITY</h4>
-                        <strong>74%</strong>
-                        <span class="badge red">HIGH</span>
+                        <strong id="aiDelayRisk">--%</strong>
+                        <span id="aiDelayBadge" class="badge yellow">WAITING</span>
                     </div>
 
                 </div>
 
-                <div class="alert-card">
-
-                    <div class="alert-icon yellow">
-                        <i class="fa-solid fa-brain"></i>
+                <div class="section-grid" style="margin-top:20px;">
+                    <div class="card" style="padding:20px;">
+                        <div class="risk-main">
+                            <div class="risk-score" id="aiOverallCircle">
+                                <strong id="aiOverallRisk">--</strong>
+                                <small>OVERALL RISK</small>
+                            </div>
+                            <div class="risk-details">
+                                <h4 style="margin:0 0 12px;">Risk Drivers</h4>
+                                <div class="risk-row">
+                                    <div class="risk-row-head"><span>Acquisition Gap</span><span id="aiAcquisitionGap">--</span></div>
+                                    <div class="risk-bar"><span id="aiAcquisitionBar" style="width:0%"></span></div>
+                                </div>
+                                <div class="risk-row">
+                                    <div class="risk-row-head"><span>Dispute / Case Exposure</span><span id="aiDisputeExposure">--</span></div>
+                                    <div class="risk-bar"><span id="aiDisputeBar" style="width:0%"></span></div>
+                                </div>
+                                <div class="risk-row">
+                                    <div class="risk-row-head"><span>Compensation Pending</span><span id="aiCompensationPending">--</span></div>
+                                    <div class="risk-bar"><span id="aiCompensationBar" style="width:0%"></span></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div>
-                        <h4>AI Recommendation</h4>
-
-                        <p>
-                            Projects with unresolved land records,
-                            pending objections and high litigation probability
-                            should be prioritized for administrative review.
-                        </p>
-
+                    <div class="card" style="padding:20px;">
+                        <div class="alert-card" style="margin:0;">
+                            <div class="alert-icon yellow"><i class="fa-solid fa-brain"></i></div>
+                            <div>
+                                <h4>AI Recommendation</h4>
+                                <p id="aiRecommendation">Select a project to generate a dynamic recommendation.</p>
+                            </div>
+                        </div>
+                        <div style="margin-top:16px;">
+                            <h4 style="margin-bottom:8px;">Why this score?</h4>
+                            <div id="aiRiskReasons" style="font-size:12px;color:var(--text-soft);line-height:1.7;">No project assessed yet.</div>
+                        </div>
                     </div>
+                </div>
 
+                <div style="margin-top:18px;padding:14px 16px;border-radius:12px;background:rgba(255,183,3,.08);font-size:11px;color:var(--text-soft);">
+                    <i class="fa-solid fa-circle-info"></i> Demo decision-support engine: scores are calculated from available project progress, acquisition gap, related disputes/cases and compensation records. This is dynamic analytics, not a trained production ML model.
                 </div>
 
             </div>
@@ -2562,9 +2781,17 @@
                             </div>
                             <div>
                                 <h3>Risk Trend</h3>
-                                <p>Historical risk movement</p>
+                                <p>Historical risk movement by selected year</p>
                             </div>
                         </div>
+
+                        <select class="select analytics-year-select" id="analyticsYear" onchange="renderAnalyticsCharts()">
+                            <option value="2026">2026</option>
+                            <option value="2025">2025</option>
+                            <option value="2024">2024</option>
+                            <option value="2023">2023</option>
+                            <option value="2022">2022</option>
+                        </select>
                     </div>
 
                     <div class="chart-box">
@@ -2978,6 +3205,182 @@ let charts = {};
 /* =========================================================
    HELPER FUNCTIONS
 ========================================================= */
+
+
+/* =========================================================
+   SMART ALERTS & NOTIFICATIONS
+========================================================= */
+let notificationsData = [];
+
+function getNotificationId(type, project) {
+    return `${type}:${getProjectKey(project) || getProjectName(project)}`.replace(/\s+/g, "-");
+}
+
+function buildNotifications() {
+    const previousRead = new Set(
+        notificationsData.filter(item => item.read).map(item => item.id)
+    );
+
+    const alerts = [];
+    const now = new Date().toLocaleString("en-IN", {
+        day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit"
+    });
+
+    (Array.isArray(projectsData) ? projectsData : []).forEach(project => {
+        const risk = calculateProjectRisk(project);
+        const name = getProjectName(project);
+
+        if (risk.overallRisk >= 70) {
+            alerts.push({
+                id: getNotificationId("high-risk", project),
+                type: "danger",
+                icon: "fa-triangle-exclamation",
+                title: "High Risk Project",
+                message: `${name} has an overall AI risk score of ${risk.overallRisk}%. Immediate review is recommended.`,
+                read: previousRead.has(getNotificationId("high-risk", project)),
+                time: now
+            });
+        }
+
+        if (risk.delayRisk >= 60) {
+            alerts.push({
+                id: getNotificationId("delay", project),
+                type: "warning",
+                icon: "fa-clock",
+                title: "High Delay Probability",
+                message: `${name} has a ${risk.delayRisk}% delay probability.`,
+                read: previousRead.has(getNotificationId("delay", project)),
+                time: now
+            });
+        }
+
+        if (risk.disputeCount > 0) {
+            alerts.push({
+                id: getNotificationId("legal", project),
+                type: "danger",
+                icon: "fa-scale-balanced",
+                title: "Legal / Dispute Alert",
+                message: `${risk.disputeCount} related dispute or case record(s) were detected for ${name}.`,
+                read: previousRead.has(getNotificationId("legal", project)),
+                time: now
+            });
+        }
+
+        if (risk.compensationGap >= 30) {
+            alerts.push({
+                id: getNotificationId("compensation", project),
+                type: "warning",
+                icon: "fa-indian-rupee-sign",
+                title: "Compensation Pending",
+                message: `${name} has ${risk.compensationGap}% estimated compensation pending.`,
+                read: previousRead.has(getNotificationId("compensation", project)),
+                time: now
+            });
+        }
+
+        if (risk.progress < 50) {
+            alerts.push({
+                id: getNotificationId("progress", project),
+                type: "info",
+                icon: "fa-chart-line",
+                title: "Low Acquisition Progress",
+                message: `${name} has only ${Math.round(risk.progress)}% acquisition progress.`,
+                read: previousRead.has(getNotificationId("progress", project)),
+                time: now
+            });
+        }
+    });
+
+    // Keep the panel useful even when all project data is low-risk.
+    if (!alerts.length && projectsData.length) {
+        alerts.push({
+            id: "system-monitoring",
+            type: "info",
+            icon: "fa-circle-check",
+            title: "Monitoring Active",
+            message: `${projectsData.length} projects were checked. No major threshold-based alerts were generated.`,
+            read: previousRead.has("system-monitoring"),
+            time: now
+        });
+    }
+
+    notificationsData = alerts.slice(0, 100);
+    renderNotifications();
+}
+
+function renderNotifications() {
+    const list = document.getElementById("notificationList");
+    const count = document.getElementById("notificationCount");
+    if (!list || !count) return;
+
+    const unread = notificationsData.filter(item => !item.read).length;
+    count.textContent = unread > 99 ? "99+" : unread;
+    count.classList.toggle("show", unread > 0);
+
+    if (!notificationsData.length) {
+        list.innerHTML = `
+            <div class="notification-empty">
+                <i class="fa-regular fa-bell-slash"></i>
+                No alerts right now
+            </div>`;
+        return;
+    }
+
+    list.innerHTML = notificationsData.map(item => `
+        <div class="notification-item ${item.read ? "" : "unread"}"
+             data-alert-id="${escapeHtml(item.id)}">
+            <div class="notification-icon ${item.type}">
+                <i class="fa-solid ${item.icon}"></i>
+            </div>
+            <div class="notification-content">
+                <div class="notification-title">${escapeHtml(item.title)}</div>
+                <div class="notification-message">${escapeHtml(item.message)}</div>
+                <div class="notification-meta">${escapeHtml(item.time)}</div>
+            </div>
+        </div>
+    `).join("");
+
+    list.querySelectorAll(".notification-item").forEach(item => {
+        item.addEventListener("click", () => {
+            const alert = notificationsData.find(a => a.id === item.dataset.alertId);
+            if (alert) alert.read = true;
+            renderNotifications();
+        });
+    });
+}
+
+function initializeNotifications() {
+    const bell = document.getElementById("notificationBell");
+    const panel = document.getElementById("notificationPanel");
+    const markAll = document.getElementById("markAllReadBtn");
+    const clear = document.getElementById("clearAlertsBtn");
+
+    if (!bell || !panel || bell.dataset.bound) return;
+    bell.dataset.bound = "true";
+
+    bell.addEventListener("click", (event) => {
+        event.stopPropagation();
+        panel.classList.toggle("open");
+    });
+
+    panel.addEventListener("click", event => event.stopPropagation());
+
+    document.addEventListener("click", () => {
+        panel.classList.remove("open");
+    });
+
+    markAll.addEventListener("click", () => {
+        notificationsData.forEach(item => item.read = true);
+        renderNotifications();
+    });
+
+    clear.addEventListener("click", () => {
+        notificationsData = [];
+        renderNotifications();
+    });
+
+    renderNotifications();
+}
 
 function formatNumber(value) {
 
@@ -3419,6 +3822,10 @@ async function loadDashboard() {
 
         }
 
+
+        populateAIProjectSelect();
+
+        buildNotifications();
 
         renderProjectTable();
 
@@ -3974,6 +4381,191 @@ function renderAllCharts() {
 
 
 /* =========================================================
+   AI DECISION SUPPORT - DYNAMIC RISK ENGINE
+========================================================= */
+
+function clampRisk(value) {
+    return Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
+}
+
+function getRiskLevel(score) {
+    if (score >= 70) return { label: "HIGH", className: "red" };
+    if (score >= 40) return { label: "MEDIUM", className: "yellow" };
+    return { label: "LOW", className: "green" };
+}
+
+function setRiskBadge(id, score) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const level = getRiskLevel(score);
+    el.textContent = level.label;
+    el.className = "badge " + level.className;
+}
+
+function getProjectKey(project) {
+    return String(
+        getProjectField(project, ["_id", "projectId", "id", "PROJECT_ID"], "")
+    );
+}
+
+function getProjectName(project) {
+    return String(
+        getProjectField(project, ["projectName", "name", "PROJECT_NAME"], "Unnamed Project")
+    );
+}
+
+function populateAIProjectSelect() {
+    const select = document.getElementById("aiProjectSelect");
+    if (!select) return;
+
+    const current = select.value;
+    select.innerHTML = '<option value="">Select a project for risk analysis</option>';
+
+    (Array.isArray(projectsData) ? projectsData : []).forEach((project, index) => {
+        const key = getProjectKey(project) || String(index);
+        const option = document.createElement("option");
+        option.value = key;
+        option.textContent = `${getProjectName(project)}${project.state ? " • " + project.state : ""}`;
+        option.dataset.index = String(index);
+        select.appendChild(option);
+    });
+
+    if (current) select.value = current;
+}
+
+function findRelatedRecords(records, project) {
+    const projectKeys = new Set([
+        getProjectKey(project),
+        String(getProjectField(project, ["projectId", "PROJECT_ID", "id"], "")),
+        getProjectName(project)
+    ].filter(Boolean).map(v => String(v).toLowerCase()));
+
+    return (Array.isArray(records) ? records : []).filter(record => {
+        const values = [
+            getProjectField(record, ["projectId", "PROJECT_ID", "project", "projectName"], ""),
+            getProjectField(record, ["caseId", "parcelId", "landId"], "")
+        ].map(v => String(v).toLowerCase());
+        return values.some(v => projectKeys.has(v));
+    });
+}
+
+function calculateProjectRisk(project) {
+    const required = Number(getProjectField(project,
+        ["landRequiredAcres", "requiredLand", "landRequired", "required"], 0));
+    const acquired = Number(getProjectField(project,
+        ["landAcquiredAcres", "acquiredLand", "landAcquired", "acquired"], 0));
+
+    let progress = Number(getProjectField(project,
+        ["acquisitionProgressPct", "progress", "progressPercent"], NaN));
+
+    if (!Number.isFinite(progress)) {
+        progress = required > 0 ? (acquired / required) * 100 : 50;
+    }
+    progress = Math.max(0, Math.min(100, progress));
+
+    const acquisitionGap = clampRisk(100 - progress);
+    const relatedCases = findRelatedRecords(disputesData, project);
+    const relatedCompensation = findRelatedRecords(compensationData, project);
+
+    const disputeCount = relatedCases.length;
+    const pendingCases = relatedCases.filter(item => {
+        const status = String(getProjectField(item, ["status", "caseStatus", "litigationStatus"], "")).toLowerCase();
+        return /pending|open|active|hearing|dispute|litigation/.test(status);
+    }).length;
+
+    let legalRisk = clampRisk(acquisitionGap * 0.25 + Math.min(50, disputeCount * 8) + Math.min(25, pendingCases * 6));
+
+    const recordStatus = String(getProjectField(project,
+        ["landRecordStatus", "recordStatus", "verificationStatus", "status"], "")).toLowerCase();
+    let landRecordRisk = clampRisk(acquisitionGap * 0.7);
+    if (/pending|unverified|disputed|missing|incomplete/.test(recordStatus)) landRecordRisk += 20;
+    landRecordRisk = clampRisk(landRecordRisk + Math.min(15, disputeCount * 3));
+
+    let totalAwarded = 0;
+    let totalPaid = 0;
+    relatedCompensation.forEach(item => {
+        totalAwarded += Number(getProjectField(item, ["awarded", "awardAmount", "totalAwarded", "amount"], 0)) || 0;
+        totalPaid += Number(getProjectField(item, ["paid", "paidAmount", "totalPaid", "paymentAmount"], 0)) || 0;
+    });
+    const compensationGap = totalAwarded > 0
+        ? clampRisk(((totalAwarded - totalPaid) / totalAwarded) * 100)
+        : 0;
+
+    const delayRisk = clampRisk(
+        acquisitionGap * 0.45 +
+        legalRisk * 0.25 +
+        landRecordRisk * 0.15 +
+        compensationGap * 0.15
+    );
+
+    const overallRisk = clampRisk(
+        legalRisk * 0.35 + landRecordRisk * 0.25 + delayRisk * 0.40
+    );
+
+    const reasons = [];
+    if (acquisitionGap >= 50) reasons.push(`Acquisition progress is only ${Math.round(progress)}%, leaving a ${acquisitionGap}% acquisition gap.`);
+    else reasons.push(`Acquisition progress is ${Math.round(progress)}%.`);
+    if (disputeCount) reasons.push(`${disputeCount} related dispute/case record(s) were found${pendingCases ? `, including ${pendingCases} potentially pending or active` : ""}.`);
+    else reasons.push("No directly matched dispute/case records were found for this project.");
+    if (totalAwarded > 0) reasons.push(`Estimated compensation pending is ${compensationGap}% of matched awarded value.`);
+    else reasons.push("No directly matched compensation records were available for this project.");
+
+    let recommendation;
+    if (overallRisk >= 70) recommendation = "Immediate priority: assign administrative review, resolve active disputes and accelerate the largest pending acquisition and compensation bottlenecks.";
+    else if (overallRisk >= 40) recommendation = "Monitor closely: create a corrective action plan for acquisition gaps and verify disputed or incomplete records before they become schedule delays.";
+    else recommendation = "Low current risk: continue routine monitoring and maintain progress, record verification and payment execution.";
+
+    return {
+        legalRisk, landRecordRisk, delayRisk, overallRisk,
+        acquisitionGap, disputeExposure: clampRisk(Math.min(100, disputeCount * 12 + pendingCases * 10)),
+        compensationGap, reasons, recommendation, progress, disputeCount
+    };
+}
+
+function calculateSelectedProjectRisk() {
+    const select = document.getElementById("aiProjectSelect");
+    if (!select || !select.value) {
+        const recommendation = document.getElementById("aiRecommendation");
+        if (recommendation) recommendation.textContent = "Please select a project first.";
+        return;
+    }
+
+    const option = select.options[select.selectedIndex];
+    const index = Number(option.dataset.index);
+    const project = projectsData[index];
+    if (!project) return;
+
+    const result = calculateProjectRisk(project);
+
+    document.getElementById("aiLegalRisk").textContent = result.legalRisk + "%";
+    document.getElementById("aiLandRisk").textContent = result.landRecordRisk + "%";
+    document.getElementById("aiDelayRisk").textContent = result.delayRisk + "%";
+    document.getElementById("aiOverallRisk").textContent = result.overallRisk + "%";
+
+    setRiskBadge("aiLegalBadge", result.legalRisk);
+    setRiskBadge("aiLandBadge", result.landRecordRisk);
+    setRiskBadge("aiDelayBadge", result.delayRisk);
+
+    document.getElementById("aiAcquisitionGap").textContent = result.acquisitionGap + "%";
+    document.getElementById("aiDisputeExposure").textContent = result.disputeExposure + "%";
+    document.getElementById("aiCompensationPending").textContent = result.compensationGap + "%";
+    document.getElementById("aiAcquisitionBar").style.width = result.acquisitionGap + "%";
+    document.getElementById("aiDisputeBar").style.width = result.disputeExposure + "%";
+    document.getElementById("aiCompensationBar").style.width = result.compensationGap + "%";
+
+    const circle = document.getElementById("aiOverallCircle");
+    if (circle) {
+        const deg = result.overallRisk * 3.6;
+        circle.style.background = `radial-gradient(circle, var(--surface) 55%, transparent 57%), conic-gradient(#ef476f 0deg, #ffb703 ${Math.min(deg, 180)}deg, #57d68d ${deg}deg, rgba(87,214,141,.10) ${deg}deg)`;
+    }
+
+    document.getElementById("aiRecommendation").textContent = result.recommendation;
+    document.getElementById("aiRiskReasons").innerHTML = result.reasons.map(reason =>
+        `<div><i class="fa-solid fa-check" style="font-size:9px;margin-right:7px;"></i>${reason}</div>`
+    ).join("");
+}
+
+/* =========================================================
    PROJECT TABLE
 ========================================================= */
 
@@ -4000,7 +4592,11 @@ function renderProjectTable() {
         return;
     }
 
-    tbody.innerHTML = projectsData.map(project => {
+    // Dashboard should not render all 500 projects at once.
+    // Limit Priority Projects to the first 50 records for better performance and scrolling.
+    const priorityProjects = projectsData.slice(0, 50);
+
+    tbody.innerHTML = priorityProjects.map(project => {
 
         // IMPORTANT:
         // Government database uses these exact fields
@@ -5523,6 +6119,8 @@ document
 
 async function init() {
 
+    initializeNotifications();
+
     await loadDashboard();
 
     renderProjects();
@@ -5774,6 +6372,375 @@ window.navigate = function(page) {
 };
 
 document.addEventListener("DOMContentLoaded", initializeBackendLogin);
+</script>
+
+
+<style>
+/* ===== Requested UI improvements ===== */
+.project-pagination{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    padding:18px 10px 4px;
+    flex-wrap:wrap;
+}
+.project-pagination button{
+    min-width:36px;
+    height:36px;
+    border:1px solid rgba(87,214,141,.25);
+    background:var(--card-bg, rgba(255,255,255,.04));
+    color:inherit;
+    border-radius:9px;
+    cursor:pointer;
+    font-weight:700;
+}
+.project-pagination button.active{
+    background:#57d68d;
+    color:#072316;
+    border-color:#57d68d;
+}
+.project-pagination button:disabled{
+    opacity:.45;
+    cursor:not-allowed;
+}
+.document-upload-status{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-bottom:18px;
+    padding:16px 18px;
+    border:1px dashed rgba(87,214,141,.45);
+    border-radius:12px;
+    background:rgba(87,214,141,.06);
+}
+.document-upload-status i{
+    font-size:22px;
+    color:#57d68d;
+}
+.analytics-year-select{
+    min-width:110px;
+}
+</style>
+
+<script>
+/* =========================================================
+   REQUESTED FRONTEND UPDATES
+========================================================= */
+
+let projectCurrentPage = 1;
+
+function getProjectField(project, fields, fallback = "") {
+    for (const field of fields) {
+        if (project && project[field] !== undefined && project[field] !== null && project[field] !== "") {
+            return project[field];
+        }
+    }
+    return fallback;
+}
+
+function getProjectRisk(project) {
+    const explicitRisk = getProjectField(project, ["riskLevel", "risk"], "");
+    if (explicitRisk) return explicitRisk;
+
+    const progress = Number(getProjectField(
+        project,
+        ["acquisitionProgressPct", "progress", "acquisitionProgress"],
+        0
+    ));
+
+    if (progress < 40) return "High";
+    if (progress < 75) return "Medium";
+    return "Low";
+}
+
+function riskBadgeClass(risk) {
+    const value = String(risk || "").toLowerCase();
+    if (value.includes("high") || value.includes("critical")) return "red";
+    if (value.includes("medium")) return "yellow";
+    return "green";
+}
+
+function applyProjectFilters() {
+    projectCurrentPage = 1;
+    renderProjects();
+}
+
+function renderProjects() {
+    const tbody = document.getElementById("projectsTable");
+    const pagination = document.getElementById("projectPagination");
+    if (!tbody) return;
+
+    const search = String(document.getElementById("projectSearch")?.value || "").trim().toLowerCase();
+    const statusFilter = String(document.getElementById("projectStatusFilter")?.value || "").trim();
+    const pageSize = Math.max(1, Number(document.getElementById("projectPageSize")?.value || 10));
+
+    const filtered = (Array.isArray(projectsData) ? projectsData : []).filter(project => {
+        const text = JSON.stringify(project || {}).toLowerCase();
+        const status = String(getProjectField(project, ["projectStatus", "status"], ""));
+        return text.includes(search) && (!statusFilter || status === statusFilter);
+    });
+
+    const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+    if (projectCurrentPage > totalPages) projectCurrentPage = totalPages;
+    if (projectCurrentPage < 1) projectCurrentPage = 1;
+
+    const start = (projectCurrentPage - 1) * pageSize;
+    const visibleProjects = filtered.slice(start, start + pageSize);
+
+    if (!visibleProjects.length) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8">
+                    <div class="empty">
+                        <i class="fa-solid fa-folder-open"></i>
+                        <div>No projects found</div>
+                    </div>
+                </td>
+            </tr>`;
+        if (pagination) pagination.innerHTML = "";
+        return;
+    }
+
+    tbody.innerHTML = visibleProjects.map(project => {
+        const risk = getProjectRisk(project);
+        const required = getProjectField(project, ["landRequiredAcres", "landRequired"], 0);
+        const acquired = getProjectField(project, ["landAcquiredAcres", "landAcquired"], 0);
+        const status = getProjectField(project, ["projectStatus", "status"], "In Progress");
+
+        return `
+            <tr>
+                <td>${escapeHtml(getProjectField(project, ["projectId", "_id"], "-"))}</td>
+                <td>${escapeHtml(getProjectField(project, ["projectName", "name"], "-"))}</td>
+                <td>${escapeHtml(getProjectField(project, ["state"], "-"))}</td>
+                <td>${escapeHtml(getProjectField(project, ["district"], "-"))}</td>
+                <td>${formatNumber(required)}</td>
+                <td>${formatNumber(acquired)}</td>
+                <td><span class="badge green">${escapeHtml(status)}</span></td>
+                <td><span class="badge ${riskBadgeClass(risk)}">${escapeHtml(risk)}</span></td>
+            </tr>`;
+    }).join("");
+
+    if (pagination) {
+        const pages = [];
+
+        pages.push(`<button ${projectCurrentPage === 1 ? "disabled" : ""} onclick="changeProjectPage(${projectCurrentPage - 1})">&laquo;</button>`);
+
+        const startPage = Math.max(1, projectCurrentPage - 2);
+        const endPage = Math.min(totalPages, startPage + 4);
+
+        for (let page = startPage; page <= endPage; page++) {
+            pages.push(`<button class="${page === projectCurrentPage ? "active" : ""}" onclick="changeProjectPage(${page})">${page}</button>`);
+        }
+
+        pages.push(`<button ${projectCurrentPage === totalPages ? "disabled" : ""} onclick="changeProjectPage(${projectCurrentPage + 1})">&raquo;</button>`);
+        pagination.innerHTML = pages.join("");
+    }
+}
+
+function changeProjectPage(page) {
+    projectCurrentPage = page;
+    renderProjects();
+}
+
+/* =========================================================
+   COMPENSATION PRIVACY
+   Summary totals are visible; individual payment records remain confidential.
+========================================================= */
+
+function renderCompensation() {
+    const tbody = document.getElementById("compensationTable");
+    if (!tbody) return;
+
+    // Use the API data first. If the backend places compensation rows inside
+    // another dashboard collection, use that as a fallback.
+    const records = Array.isArray(compensationData) && compensationData.length
+        ? compensationData
+        : (Array.isArray(dashboardData?.compensation) ? dashboardData.compensation
+        : Array.isArray(dashboardData?.payments) ? dashboardData.payments
+        : Array.isArray(dashboardData?.recentCompensation) ? dashboardData.recentCompensation
+        : Array.isArray(dashboardData?.records) ? dashboardData.records : []);
+
+    let awardedTotal = 0;
+    let paidTotal = 0;
+
+    records.forEach(item => {
+        awardedTotal += Number(getProjectField(item,
+            ["awardedAmount", "amountAwarded", "awarded", "totalAwarded", "awardAmount"], 0)) || 0;
+        paidTotal += Number(getProjectField(item,
+            ["paidAmount", "amountPaid", "paid", "paymentAmount"], 0)) || 0;
+    });
+
+    // Summary cards always show real totals.
+    if (!records.length) {
+        awardedTotal = Number(dashboardData.totals?.awarded || 0);
+        paidTotal = Number(dashboardData.totals?.paid || 0);
+    }
+
+    const compAwarded = document.getElementById("compAwarded");
+    const compPaid = document.getElementById("compPaid");
+    const compPending = document.getElementById("compPending");
+
+    if (compAwarded) compAwarded.textContent = formatCurrency(awardedTotal);
+    if (compPaid) compPaid.textContent = formatCurrency(paidTotal);
+    if (compPending) compPending.textContent = formatCurrency(Math.max(0, awardedTotal - paidTotal));
+
+    if (!records.length) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5">
+                    <div class="empty">
+                        <i class="fa-solid fa-database"></i>
+                        <div>No compensation records were returned by the backend.</div>
+                    </div>
+                </td>
+            </tr>`;
+        return;
+    }
+
+    // Show user/beneficiary and case data. Only the sensitive money columns are hidden.
+    tbody.innerHTML = records.slice(0, 100).map(item => {
+        const caseParcel = getProjectField(item,
+            ["caseId", "parcelId", "caseNumber", "caseParcel", "landId"], "-");
+        const beneficiary = getProjectField(item,
+            ["beneficiary", "beneficiaryName", "ownerName", "owner", "landOwnerName", "name"], "-");
+        const status = getProjectField(item,
+            ["paymentStatus", "status", "payment_status"], "Pending");
+
+        const statusClass = String(status).toLowerCase().includes("paid") ||
+                            String(status).toLowerCase().includes("complete")
+                            ? "green" : "yellow";
+
+        return `
+            <tr>
+                <td>${escapeHtml(caseParcel)}</td>
+                <td>${escapeHtml(beneficiary)}</td>
+                <td>Confidential</td>
+                <td>Confidential</td>
+                <td><span class="badge ${statusClass}">${escapeHtml(status)}</span></td>
+            </tr>`;
+    }).join("");
+}
+
+/* Year-wise risk trend. Replace these generated datasets with backend history when available. */
+const riskTrendByYear = {
+    "2022": [58,56,61,63,60,57,55,59,62,60,58,56],
+    "2023": [55,57,54,52,56,60,58,55,53,51,54,57],
+    "2024": [49,52,55,51,57,61,59,63,60,58,56,54],
+    "2025": [47,50,48,53,57,55,61,64,60,66,63,59],
+    "2026": [42,45,47,44,51,56,54,64,72,68,65,62]
+};
+
+function renderAnalyticsCharts() {
+    setTimeout(() => {
+        const riskCanvas = document.getElementById("analyticsRiskChart");
+        const landCanvas = document.getElementById("analyticsLandChart");
+        const selectedYear = String(document.getElementById("analyticsYear")?.value || "2026");
+        const riskData = riskTrendByYear[selectedYear] || riskTrendByYear["2026"];
+
+        if (riskCanvas) {
+            if (charts.analyticsRisk) charts.analyticsRisk.destroy();
+
+            charts.analyticsRisk = new Chart(riskCanvas, {
+                type: "line",
+                data: {
+                    labels: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
+                    datasets: [{
+                        label: `AI Risk - ${selectedYear}`,
+                        data: riskData,
+                        borderColor: "#57d68d",
+                        backgroundColor: "rgba(87,214,141,.12)",
+                        fill: true,
+                        tension: .4,
+                        borderWidth: 3,
+                        pointRadius: 3,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: chartColors().text } },
+                        tooltip: {
+                            callbacks: {
+                                label: context => `Risk Index: ${context.raw}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { ticks: { color: chartColors().text }, grid: { display: false } },
+                        y: {
+                            min: 0,
+                            max: 100,
+                            ticks: { color: chartColors().text },
+                            grid: { color: chartColors().grid }
+                        }
+                    }
+                }
+            });
+        }
+
+        if (landCanvas) {
+            if (charts.analyticsLand) charts.analyticsLand.destroy();
+
+            const totals = dashboardData.totals || {};
+            const required = Number(totals.landRequired || 0);
+            const acquired = Number(totals.landAcquired || 0);
+
+            charts.analyticsLand = new Chart(landCanvas, {
+                type: "bar",
+                data: {
+                    labels: ["Required", "Acquired", "Pending"],
+                    datasets: [{
+                        data: [required, acquired, Math.max(0, required - acquired)],
+                        backgroundColor: ["#0b3d2e", "#57d68d", "#b7efc5"],
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: chartColors().text }, grid: { display: false } },
+                        y: { ticks: { color: chartColors().text }, grid: { color: chartColors().grid } }
+                    }
+                }
+            });
+        }
+    }, 100);
+}
+
+/* Simple upload interaction: select file directly, no metadata form. */
+document.addEventListener("DOMContentLoaded", () => {
+    const input = document.getElementById("documentUploadInput");
+    const status = document.getElementById("documentUploadStatus");
+
+    if (input && status) {
+        input.addEventListener("change", () => {
+            const file = input.files && input.files[0];
+            if (!file) return;
+
+            status.innerHTML = `
+                <i class="fa-solid fa-circle-check"></i>
+                <span><strong>${escapeHtml(file.name)}</strong> selected successfully. Ready for backend upload.</span>`;
+
+            if (typeof showToast === "function") {
+                showToast(`${file.name} selected`);
+            }
+        });
+    }
+});
+
+/* Keep project filters responsive. */
+document.addEventListener("DOMContentLoaded", () => {
+    const search = document.getElementById("projectSearch");
+    const status = document.getElementById("projectStatusFilter");
+
+    if (search) search.addEventListener("input", applyProjectFilters);
+    if (status) status.addEventListener("change", applyProjectFilters);
+});
 </script>
 
 </body>
