@@ -1,20 +1,23 @@
 {
-  "name": "national-land-acquisition-system",
+  "name": "national-land-system-backend",
   "version": "1.0.0",
-  "description": "SIH National Land Acquisition and Management System",
+  "description": "Backend for National Land Acquisition and Management System",
   "main": "server.js",
-  "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js",
-    "import": "node importData.js"
-  },
+ "scripts": {
+  "start": "node server.js",
+  "dev": "nodemon server.js"
+},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
   "dependencies": {
-    "bcryptjs": "^3.0.3",
-    "cors": "^2.8.5",
-    "csv-parser": "^3.0.0",
-    "dotenv": "^16.4.5",
-    "express": "^4.21.1",
-    "jsonwebtoken": "^9.0.3",
-    "mongoose": "^8.7.0"
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "mongoose": "^9.9.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
   }
 }
