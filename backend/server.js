@@ -816,7 +816,7 @@ const users = [
 
 {
 username: "admin",
-password: "Admin@123",
+password: "admin123",
 role: "ADMINISTRATOR",
 designation: "Super Admin",
 access: "Full System",
@@ -848,38 +848,43 @@ username:
 item.username,
 });
 
+const hashedPassword = await bcrypt.hash(
+    item.password,
+    10
+);
+
 if (!existing) {
+    await User.create({
+        username: item.username,
+        password: hashedPassword,
+        role: item.role,
+        designation: item.designation,
+        access: item.access,
+        status: "ACTIVE",
+    });
 
-const hashedPassword =
-await bcrypt.hash(
-item.password,
-10
-);
+    console.log(
+        `Created default user: ${item.username}`
+    );
+} else {
+    await User.updateOne(
+        {
+            username: item.username,
+        },
+        {
+            $set: {
+                password: hashedPassword,
+                role: item.role,
+                designation: item.designation,
+                access: item.access,
+                status: "ACTIVE",
+            },
+        }
+    );
 
-await User.create({
-username:
-item.username,
-
-password:
-hashedPassword,
-
-role:
-item.role,
-
-designation:
-item.designation,
-
-access:
-item.access,
-
-status:
-"ACTIVE",
-});
-
-console.log(
-`Created default user: ${item.username}`
-);
-
+    console.log(
+        `Updated default user: ${item.username}`
+    );
 }
 
 }
