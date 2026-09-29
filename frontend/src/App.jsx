@@ -306,7 +306,7 @@ function LoginScreen() {
   const { login } = useAuth();
 
   const [username, setUsername] = useState("admin");
-  const [password, setPassword] = useState("Admin@123");
+  const [password, setPassword] = useState("admin123");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
