@@ -491,7 +491,7 @@ function LoginScreen() {
             </strong>
 
             <div>
-              admin / Admin@123
+              admin / admin123
             </div>
 
             <div>
