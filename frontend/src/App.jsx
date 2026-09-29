@@ -1100,7 +1100,6 @@ function CardHeader({
 /* =========================================================
    DASHBOARD MAP
 ========================================================= */
-
 function ProjectMap({
   projects,
   parcels,
@@ -1113,8 +1112,8 @@ function ProjectMap({
   useEffect(() => {
     if (!mapRef.current) return;
 
+    // Create map only once
     if (!instanceRef.current) {
-
       instanceRef.current = L.map(
         mapRef.current,
         {
@@ -1152,23 +1151,41 @@ function ProjectMap({
 
     const points = [];
 
-    const items = [
-      ...projects,
-      ...parcels,
-    ];
+    // ---------------------------------------
+    // CREATE PROJECT LOOKUP
+    // ---------------------------------------
 
-    items.forEach((item) => {
+    const projectMap = new Map();
+
+    projects.forEach((project) => {
+      const id = String(
+        project?.projectId ||
+        project?.id ||
+        project?._id ||
+        ""
+      ).trim();
+
+      if (id) {
+        projectMap.set(id, project);
+      }
+    });
+
+    // ---------------------------------------
+    // PROJECTS WITH THEIR OWN COORDINATES
+    // ---------------------------------------
+
+    projects.forEach((project) => {
 
       const coords =
-        coordinates(item);
+        coordinates(project);
 
       if (!coords) return;
 
       const status =
-        projectStatus(item);
+        projectStatus(project);
 
       let color =
-        LIGHT_GREEN;
+        "#22c55e";
 
       if (status === "Ongoing") {
         color = "#2d9cdb";
@@ -1182,7 +1199,7 @@ function ProjectMap({
         L.circleMarker(
           coords,
           {
-            radius: full ? 7 : 6,
+            radius: full ? 9 : 7,
             color: "#ffffff",
             weight: 2,
             fillColor: color,
@@ -1196,8 +1213,9 @@ function ProjectMap({
           font-family:Inter,Arial,sans-serif;
           line-height:1.55;
         ">
+
           <strong style="font-size:14px;">
-            ${projectName(item)}
+            ${projectName(project)}
           </strong>
 
           <hr style="
@@ -1207,15 +1225,15 @@ function ProjectMap({
           "/>
 
           <b>Project ID:</b>
-          ${projectId(item)}
+          ${projectId(project)}
           <br/>
 
           <b>State:</b>
-          ${item.state || "-"}
+          ${project.state || "-"}
           <br/>
 
           <b>District:</b>
-          ${item.district || "-"}
+          ${project.district || "-"}
           <br/>
 
           <b>Status:</b>
@@ -1223,7 +1241,8 @@ function ProjectMap({
           <br/>
 
           <b>Progress:</b>
-          ${projectProgress(item).toFixed(1)}%
+          ${projectProgress(project).toFixed(1)}%
+
         </div>
       `);
 
@@ -1232,18 +1251,147 @@ function ProjectMap({
       points.push(coords);
     });
 
+    // ---------------------------------------
+    // PARCEL MARKERS
+    // STATUS COMES FROM LINKED PROJECT
+    // ---------------------------------------
+
+    parcels.forEach((parcel) => {
+
+      const coords =
+        coordinates(parcel);
+
+      if (!coords) return;
+
+      const linkedProject =
+        projectMap.get(
+          String(
+            parcel?.projectId ||
+            parcel?.projectID ||
+            parcel?.project_id ||
+            ""
+          ).trim()
+        );
+
+      // If parcel is connected to a project,
+      // use the PROJECT status.
+      const statusSource =
+        linkedProject || parcel;
+
+      const status =
+        projectStatus(statusSource);
+
+      let color =
+        "#22c55e";
+
+      if (status === "Ongoing") {
+        color = "#2d9cdb";
+      }
+
+      if (status === "Under Process") {
+        color = "#ffb703";
+      }
+
+      const marker =
+        L.circleMarker(
+          coords,
+          {
+            radius: full ? 6 : 5,
+            color: "#ffffff",
+            weight: 1.5,
+            fillColor: color,
+            fillOpacity: 0.85,
+          }
+        );
+
+      marker.bindPopup(`
+        <div style="
+          min-width:220px;
+          font-family:Inter,Arial,sans-serif;
+          line-height:1.55;
+        ">
+
+          <strong style="font-size:14px;">
+            ${
+              parcel?.parcelId ||
+              parcel?.id ||
+              "Land Parcel"
+            }
+          </strong>
+
+          <hr style="
+            border:0;
+            border-top:1px solid #ddd;
+            margin:8px 0;
+          "/>
+
+          <b>Project ID:</b>
+          ${
+            parcel?.projectId ||
+            "-"
+          }
+          <br/>
+
+          <b>Project:</b>
+          ${
+            linkedProject
+              ? projectName(linkedProject)
+              : "-"
+          }
+          <br/>
+
+          <b>State:</b>
+          ${
+            linkedProject?.state ||
+            parcel?.state ||
+            "-"
+          }
+          <br/>
+
+          <b>District:</b>
+          ${
+            linkedProject?.district ||
+            parcel?.district ||
+            "-"
+          }
+          <br/>
+
+          <b>Status:</b>
+          ${status}
+          <br/>
+
+          <b>Acquisition Progress:</b>
+          ${projectProgress(statusSource).toFixed(1)}%
+
+        </div>
+      `);
+
+      marker.addTo(layer);
+
+      points.push(coords);
+    });
+
+    // ---------------------------------------
+    // FIT MAP TO DATA
+    // ---------------------------------------
+
     setTimeout(() => {
+
       map.invalidateSize();
 
       if (points.length > 1) {
         map.fitBounds(
-          L.latLngBounds(points).pad(0.15)
+          L.latLngBounds(points).pad(0.10)
         );
       }
+
     }, 100);
 
-    return () => {};
-  }, [projects, parcels, full]);
+  }, [
+    projects,
+    parcels,
+    full,
+  ]);
 
   return (
     <div
@@ -1299,7 +1447,6 @@ function ProjectMap({
     </div>
   );
 }
-
 
 /* =========================================================
    DASHBOARD
