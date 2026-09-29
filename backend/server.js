@@ -3,29 +3,28 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const multer = require("multer");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+const http = require("http");
+const { Server } = require("socket.io");
+const fs = require("fs");
+const path = require("path");
+
 require("dotenv").config();
 
+/* =========================================================
+   APP
+========================================================= */
+
 const app = express();
+const server = http.createServer(app);
 
-// ========================================
-// MIDDLEWARE
-// ========================================
+/* =========================================================
+   CONFIG
+========================================================= */
 
-app.use(
-    cors({
-        origin: "*",
-        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allowedHeaders: ["Content-Type", "Authorization"]
-    })
-);
-
-app.use(express.json());
-
-// ========================================
-// CONFIG
-// ========================================
-
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT) || 5000;
 
 const MONGO_URI =
     process.env.MONGO_URI ||
@@ -35,795 +34,1004 @@ const JWT_SECRET =
     process.env.JWT_SECRET ||
     "SIH_LAND_SYSTEM_SECRET_2026";
 
-// ========================================
-// USER MODEL
-// ========================================
+const NODE_ENV =
+    process.env.NODE_ENV || "development";
 
-const userSchema = new mongoose.Schema(
-    {
-        username: {
-            type: String,
-            required: true,
-            unique: true,
-            trim: true
-        },
+/* =========================================================
+   CORS
+========================================================= */
 
-        password: {
-            type: String,
-            required: true
-        },
+const allowedOrigins = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
+];
 
-        role: {
-            type: String,
-            required: true,
-            enum: [
-                "ADMINISTRATOR",
-                "LAND_OFFICER",
-                "LEGAL_OFFICER"
-            ]
-        },
-
-        designation: {
-            type: String,
-            required: true
-        },
-
-        access: {
-            type: String,
-            required: true
-        },
-
-        status: {
-            type: String,
-            default: "ACTIVE"
+const corsOptions = {
+    origin: function (origin, callback) {
+        /*
+         * Allow requests without an Origin header.
+         * Useful for Postman, server-to-server requests,
+         * direct health checks, etc.
+         */
+        if (!origin) {
+            return callback(null, true);
         }
+
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+
+        console.warn(
+            "CORS blocked origin:",
+            origin
+        );
+
+        return callback(
+            new Error("CORS origin not allowed")
+        );
     },
-    {
-        timestamps: true
+
+    methods: [
+        "GET",
+        "POST",
+        "PUT",
+        "PATCH",
+        "DELETE",
+        "OPTIONS",
+    ],
+
+    allowedHeaders: [
+        "Content-Type",
+        "Authorization",
+    ],
+
+    credentials: true,
+};
+
+/*
+ * IMPORTANT:
+ * CORS middleware must be registered before routes.
+ */
+app.use(cors(corsOptions));
+
+app.options("*", cors(corsOptions));
+
+/* =========================================================
+   SECURITY
+========================================================= */
+
+app.use(
+    helmet({
+        crossOriginResourcePolicy: {
+            policy: "cross-origin",
+        },
+    })
+);
+
+/*
+ * Login/API rate limiter.
+ * Kept reasonably high for local development.
+ */
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 1000,
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+app.use("/api/", apiLimiter);
+
+/* =========================================================
+   BODY PARSING
+========================================================= */
+
+app.use(
+    express.json({
+        limit: "10mb",
+    })
+);
+
+app.use(
+    express.urlencoded({
+        extended: true,
+        limit: "10mb",
+    })
+);
+
+/* =========================================================
+   UPLOADS
+========================================================= */
+
+const uploadDirectory = path.join(
+    __dirname,
+    "uploads"
+);
+
+if (!fs.existsSync(uploadDirectory)) {
+    fs.mkdirSync(uploadDirectory, {
+        recursive: true,
+    });
+}
+
+app.use(
+    "/uploads",
+    express.static(uploadDirectory)
+);
+
+/* =========================================================
+   SOCKET.IO
+========================================================= */
+
+const io = new Server(server, {
+    cors: {
+        origin: allowedOrigins,
+        methods: [
+            "GET",
+            "POST",
+        ],
+        credentials: true,
+    },
+
+    transports: [
+        "websocket",
+        "polling",
+    ],
+});
+
+/* =========================================================
+   SOCKET AUTH
+========================================================= */
+
+io.use((socket, next) => {
+    try {
+        const token =
+            socket.handshake.auth?.token;
+
+        if (!token) {
+            return next(
+                new Error(
+                    "Authentication token required"
+                )
+            );
+        }
+
+        const decoded =
+            jwt.verify(
+                token,
+                JWT_SECRET
+            );
+
+        socket.user = decoded;
+
+        next();
+    } catch (error) {
+        next(
+            new Error(
+                "Invalid socket authentication"
+            )
+        );
+    }
+});
+
+/* =========================================================
+   SOCKET CONNECTION
+========================================================= */
+
+io.on(
+    "connection",
+    (socket) => {
+        console.log(
+            "Socket connected:",
+            socket.id
+        );
+
+        const user = socket.user;
+
+        /*
+         * User-specific room
+         */
+        if (user?.id) {
+            socket.join(
+                `user:${user.id}`
+            );
+        }
+
+        /*
+         * Role-specific room
+         */
+        if (user?.role) {
+            socket.join(
+                `role:${user.role}`
+            );
+        }
+
+        socket.emit(
+            "connection:ready",
+            {
+                success: true,
+                message:
+                    "NLAMS real-time connection established",
+            }
+        );
+
+        socket.on(
+            "disconnect",
+            (reason) => {
+                console.log(
+                    "Socket disconnected:",
+                    socket.id,
+                    reason
+                );
+            }
+        );
     }
 );
+
+/* =========================================================
+   DATABASE SCHEMAS
+========================================================= */
+
+/* ---------------- USER ---------------- */
+
+const userSchema =
+    new mongoose.Schema(
+        {
+            username: {
+                type: String,
+                required: true,
+                unique: true,
+                trim: true,
+            },
+
+            password: {
+                type: String,
+                required: true,
+            },
+
+            role: {
+                type: String,
+                required: true,
+                enum: [
+                    "ADMINISTRATOR",
+                    "LAND_OFFICER",
+                    "LEGAL_OFFICER",
+                ],
+            },
+
+            designation: {
+                type: String,
+                default: "",
+            },
+
+            access: {
+                type: String,
+                default: "",
+            },
+
+            status: {
+                type: String,
+                default: "ACTIVE",
+            },
+        },
+
+        {
+            timestamps: true,
+        }
+    );
 
 const User =
     mongoose.models.User ||
-    mongoose.model("User", userSchema);
+    mongoose.model(
+        "User",
+        userSchema
+    );
 
-// ========================================
-// PROJECT MODEL
-// ========================================
+/* ---------------- PROJECT ---------------- */
 
-const projectSchema = new mongoose.Schema(
-    {
-        projectId: {
-            type: String,
-            unique: true,
-            required: true,
-            trim: true
+const projectSchema =
+    new mongoose.Schema(
+        {
+            projectId: {
+                type: String,
+                required: true,
+                unique: true,
+                trim: true,
+            },
+
+            projectName: {
+                type: String,
+                default: "",
+            },
+
+            state: {
+                type: String,
+                default: "",
+            },
+
+            district: {
+                type: String,
+                default: "",
+            },
+
+            authority: {
+                type: String,
+                default: "",
+            },
+
+            projectType: {
+                type: String,
+                default: "",
+            },
+
+            startDate: {
+                type: String,
+                default: "",
+            },
+
+            expectedCompletion: {
+                type: String,
+                default: "",
+            },
+
+            landRequiredAcres: {
+                type: Number,
+                default: 0,
+            },
+
+            landAcquiredAcres: {
+                type: Number,
+                default: 0,
+            },
+
+            acquisitionProgressPct: {
+                type: Number,
+                default: 0,
+            },
+
+            projectStatus: {
+                type: String,
+                default: "In Progress",
+            },
+
+            riskLevel: {
+                type: String,
+                default: "Medium",
+            },
+
+            createdBy: {
+                type: String,
+                default: "",
+            },
         },
 
-        projectName: {
-            type: String,
-            default: ""
-        },
-
-        state: {
-            type: String,
-            default: ""
-        },
-
-        district: {
-            type: String,
-            default: ""
-        },
-
-        authority: {
-            type: String,
-            default: ""
-        },
-
-        projectType: {
-            type: String,
-            default: ""
-        },
-
-        startDate: {
-            type: String,
-            default: ""
-        },
-
-        expectedCompletion: {
-            type: String,
-            default: ""
-        },
-
-        landRequiredAcres: {
-            type: Number,
-            default: 0
-        },
-
-        landAcquiredAcres: {
-            type: Number,
-            default: 0
-        },
-
-        acquisitionProgressPct: {
-            type: Number,
-            default: 0
-        },
-
-        projectStatus: {
-            type: String,
-            default: "In Progress"
-        },
-
-        riskLevel: {
-            type: String,
-            default: "Medium"
-        },
-
-        createdBy: {
-            type: String,
-            default: ""
+        {
+            timestamps: true,
+            strict: false,
         }
-    },
-    {
-        timestamps: true,
-        strict: false
-    }
-);
+    );
 
 const Project =
     mongoose.models.Project ||
-    mongoose.model("Project", projectSchema);
+    mongoose.model(
+        "Project",
+        projectSchema
+    );
 
-// ========================================
-// LAND / PARCEL MODEL
-// ========================================
+/* ---------------- LAND / PARCEL ---------------- */
 
-const landSchema = new mongoose.Schema(
-    {
-        parcelId: {
-            type: String,
-            required: true,
-            unique: true
+const landSchema =
+    new mongoose.Schema(
+        {
+            parcelId: {
+                type: String,
+                required: true,
+                unique: true,
+            },
+
+            projectId: {
+                type: String,
+                default: "",
+            },
+
+            state: {
+                type: String,
+                default: "",
+            },
+
+            district: {
+                type: String,
+                default: "",
+            },
+
+            village: {
+                type: String,
+                default: "",
+            },
+
+            landType: {
+                type: String,
+                default: "",
+            },
+
+            areaAcres: {
+                type: Number,
+                default: 0,
+            },
+
+            acquisitionStatus: {
+                type: String,
+                default: "Pending",
+            },
+
+            litigationFlag: {
+                type: String,
+                default: "No",
+            },
+
+            latitude: {
+                type: Number,
+                default: null,
+            },
+
+            longitude: {
+                type: Number,
+                default: null,
+            },
         },
 
-        projectId: {
-            type: String,
-            default: ""
-        },
-
-        state: {
-            type: String,
-            default: "Uttar Pradesh"
-        },
-
-        district: {
-            type: String,
-            default: ""
-        },
-
-        village: {
-            type: String,
-            default: ""
-        },
-
-        landType: {
-            type: String,
-            default: "Agricultural"
-        },
-
-        areaAcres: {
-            type: Number,
-            default: 0
-        },
-
-        acquisitionStatus: {
-            type: String,
-            default: "Pending"
-        },
-
-        litigationFlag: {
-            type: String,
-            default: "No"
-        },
-
-        latitude: {
-            type: Number
-        },
-
-        longitude: {
-            type: Number
-        },
-
-        createdBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User"
+        {
+            timestamps: true,
+            strict: false,
         }
-    },
-    {
-        timestamps: true,
-        strict: false
-    }
-);
+    );
 
 const Land =
     mongoose.models.Land ||
-    mongoose.model("Land", landSchema);
+    mongoose.model(
+        "Land",
+        landSchema,
+        "landparcels"
+    );
 
-// ========================================
-// COMPENSATION MODEL
-// ========================================
+/* ---------------- COMPENSATION ---------------- */
 
-const compensationSchema = new mongoose.Schema(
-    {
-        compensationId: {
-            type: String,
-            required: true,
-            unique: true
+const compensationSchema =
+    new mongoose.Schema(
+        {
+            compensationId: {
+                type: String,
+                required: true,
+                unique: true,
+            },
+
+            projectId: {
+                type: String,
+                default: "",
+            },
+
+            parcelId: {
+                type: String,
+                default: "",
+            },
+
+            ownerName: {
+                type: String,
+                default: "",
+            },
+
+            awardedAmount: {
+                type: Number,
+                default: 0,
+            },
+
+            paidAmount: {
+                type: Number,
+                default: 0,
+            },
+
+            status: {
+                type: String,
+                default: "Pending",
+            },
+
+            createdBy: {
+                type: String,
+                default: "",
+            },
         },
 
-        projectId: {
-            type: String,
-            default: ""
-        },
-
-        parcelId: {
-            type: String,
-            default: ""
-        },
-
-        ownerName: {
-            type: String,
-            default: ""
-        },
-
-        awardedAmount: {
-            type: Number,
-            default: 0
-        },
-
-        paidAmount: {
-            type: Number,
-            default: 0
-        },
-
-        status: {
-            type: String,
-            default: "Pending"
-        },
-
-        createdBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User"
+        {
+            timestamps: true,
+            strict: false,
         }
-    },
-    {
-        timestamps: true,
-        strict: false
-    }
-);
+    );
 
 const Compensation =
     mongoose.models.Compensation ||
-    mongoose.model("Compensation", compensationSchema);
+    mongoose.model(
+        "Compensation",
+        compensationSchema
+    );
 
-// ========================================
-// LEGAL CASE MODEL
-// ========================================
+/* ---------------- LEGAL CASE ---------------- */
 
-const caseSchema = new mongoose.Schema(
-    {
-        caseId: {
-            type: String,
-            required: true,
-            unique: true
+const legalCaseSchema =
+    new mongoose.Schema(
+        {
+            caseId: {
+                type: String,
+                required: true,
+                unique: true,
+            },
+
+            projectId: {
+                type: String,
+                default: "",
+            },
+
+            parcelId: {
+                type: String,
+                default: "",
+            },
+
+            title: {
+                type: String,
+                default: "",
+            },
+
+            description: {
+                type: String,
+                default: "",
+            },
+
+            status: {
+                type: String,
+                default: "Pending",
+            },
+
+            priority: {
+                type: String,
+                default: "Medium",
+            },
+
+            objectionPending: {
+                type: Boolean,
+                default: false,
+            },
+
+            createdBy: {
+                type: String,
+                default: "",
+            },
         },
 
-        projectId: {
-            type: String,
-            default: ""
-        },
-
-        parcelId: {
-            type: String,
-            default: ""
-        },
-
-        title: {
-            type: String,
-            required: true
-        },
-
-        description: {
-            type: String,
-            default: ""
-        },
-
-        status: {
-            type: String,
-            default: "Pending"
-        },
-
-        priority: {
-            type: String,
-            default: "Medium"
-        },
-
-        objectionPending: {
-            type: Boolean,
-            default: false
-        },
-
-        createdBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User"
+        {
+            timestamps: true,
+            strict: false,
         }
-    },
-    {
-        timestamps: true,
-        strict: false
-    }
-);
+    );
 
 const LegalCase =
     mongoose.models.LegalCase ||
-    mongoose.model("LegalCase", caseSchema);
-
-// ========================================
-// PROJECT NORMALIZER
-// ========================================
-
-function normalizeProject(project) {
-    const obj =
-        typeof project.toObject === "function"
-            ? project.toObject()
-            : project;
-
-    const required = Number(
-        obj.landRequiredAcres ??
-        obj.landRequired ??
-        obj.requiredAcres ??
-        0
+    mongoose.model(
+        "LegalCase",
+        legalCaseSchema
     );
 
-    const acquired = Number(
-        obj.landAcquiredAcres ??
-        obj.landAcquired ??
-        obj.acquiredAcres ??
-        0
+/* ---------------- DOCUMENT ---------------- */
+
+const documentSchema =
+    new mongoose.Schema(
+        {
+            documentId: {
+                type: String,
+                unique: true,
+                sparse: true,
+            },
+
+            name: {
+                type: String,
+                default: "",
+            },
+
+            originalName: {
+                type: String,
+                default: "",
+            },
+
+            fileName: {
+                type: String,
+                default: "",
+            },
+
+            mimeType: {
+                type: String,
+                default: "",
+            },
+
+            size: {
+                type: Number,
+                default: 0,
+            },
+
+            url: {
+                type: String,
+                default: "",
+            },
+
+            projectId: {
+                type: String,
+                default: "",
+            },
+
+            parcelId: {
+                type: String,
+                default: "",
+            },
+
+            uploadedBy: {
+                type: String,
+                default: "",
+            },
+
+            uploadedByRole: {
+                type: String,
+                default: "",
+            },
+
+            status: {
+                type: String,
+                default: "UPLOADED",
+            },
+        },
+
+        {
+            timestamps: true,
+            strict: false,
+        }
     );
 
-    let progress = Number(
-        obj.acquisitionProgressPct ??
-        obj.progress ??
-        0
+const Document =
+    mongoose.models.Document ||
+    mongoose.model(
+        "Document",
+        documentSchema
     );
 
-    if (!progress && required > 0) {
-        progress = (acquired / required) * 100;
-    }
+/* ---------------- NOTIFICATION ---------------- */
 
-    progress = Math.min(
-        100,
-        Math.max(0, progress)
+const notificationSchema =
+    new mongoose.Schema(
+        {
+            title: {
+                type: String,
+                required: true,
+            },
+
+            message: {
+                type: String,
+                default: "",
+            },
+
+            type: {
+                type: String,
+                default: "info",
+            },
+
+            targetRole: {
+                type: String,
+                default: "",
+            },
+
+            targetUserId: {
+                type: String,
+                default: "",
+            },
+
+            read: {
+                type: Boolean,
+                default: false,
+            },
+
+            createdBy: {
+                type: String,
+                default: "",
+            },
+        },
+
+        {
+            timestamps: true,
+        }
     );
 
-    return {
-        ...obj,
+const Notification =
+    mongoose.models.Notification ||
+    mongoose.model(
+        "Notification",
+        notificationSchema
+    );
 
-        projectId:
-            obj.projectId || "-",
+/* ---------------- AUDIT ---------------- */
 
-        projectName:
-            obj.projectName ||
-            obj.name ||
-            "-",
+const auditSchema =
+    new mongoose.Schema(
+        {
+            action: {
+                type: String,
+                default: "",
+            },
 
-        state:
-            obj.state || "-",
+            event: {
+                type: String,
+                default: "",
+            },
 
-        district:
-            obj.district || "-",
+            username: {
+                type: String,
+                default: "",
+            },
 
-        authority:
-            obj.authority || "-",
+            role: {
+                type: String,
+                default: "",
+            },
 
-        projectType:
-            obj.projectType || "-",
+            userId: {
+                type: String,
+                default: "",
+            },
 
-        startDate:
-            obj.startDate || "",
+            details: {
+                type: mongoose.Schema.Types.Mixed,
+                default: {},
+            },
 
-        expectedCompletion:
-            obj.expectedCompletion || "",
+            ip: {
+                type: String,
+                default: "",
+            },
+        },
 
-        // IMPORTANT
-        // These are the fields frontend should receive
-        landRequiredAcres: required,
+        {
+            timestamps: true,
+        }
+    );
 
-        landAcquiredAcres: acquired,
+const Audit =
+    mongoose.models.Audit ||
+    mongoose.model(
+        "Audit",
+        auditSchema
+    );
 
-        acquisitionProgressPct:
-            Number(progress.toFixed(2)),
-
-        projectStatus:
-            obj.projectStatus ||
-            obj.status ||
-            "In Progress",
-
-        riskLevel:
-            obj.riskLevel ||
-            "Medium"
-    };
-}
-
-// ========================================
-// CREATE DEFAULT USERS
-// ========================================
+/* =========================================================
+   DEFAULT USERS
+========================================================= */
 
 async function createDefaultUsers() {
+    const users = [
+        {
+            username: "admin",
+            password: "Admin@123",
+            role: "ADMINISTRATOR",
+            designation: "Super Admin",
+            access: "Full System",
+        },
 
-    try {
+        {
+            username: "land.officer",
+            password: "Land@123",
+            role: "LAND_OFFICER",
+            designation: "Government Land Officer",
+            access: "Land & Projects",
+        },
 
-        const users = [
-            {
-                username: "admin",
-                password: "Admin@123",
-                role: "ADMINISTRATOR",
-                designation: "Super Admin",
-                access: "Full System"
-            },
+        {
+            username: "legal.officer",
+            password: "Legal@123",
+            role: "LEGAL_OFFICER",
+            designation: "Legal Officer",
+            access: "Legal & Cases",
+        },
+    ];
 
-            {
-                username: "land.officer",
-                password: "Land@123",
-                role: "LAND_OFFICER",
-                designation: "Government Officer",
-                access: "Land & Projects"
-            },
+    for (const item of users) {
+        const existing =
+            await User.findOne({
+                username:
+                    item.username,
+            });
 
-            {
-                username: "legal.officer",
-                password: "Legal@123",
-                role: "LEGAL_OFFICER",
-                designation: "Legal Officer",
-                access: "Legal & Cases"
-            }
-        ];
-
-        for (const userData of users) {
-
-            const existingUser =
-                await User.findOne({
-                    username:
-                        userData.username
-                });
-
-            if (!existingUser) {
-
-                const hashedPassword =
-                    await bcrypt.hash(
-                        userData.password,
-                        10
-                    );
-
-                await User.create({
-                    username:
-                        userData.username,
-
-                    password:
-                        hashedPassword,
-
-                    role:
-                        userData.role,
-
-                    designation:
-                        userData.designation,
-
-                    access:
-                        userData.access,
-
-                    status: "ACTIVE"
-                });
-
-                console.log(
-                    "Created user:",
-                    userData.username
+        if (!existing) {
+            const hashedPassword =
+                await bcrypt.hash(
+                    item.password,
+                    10
                 );
-            }
+
+            await User.create({
+                username:
+                    item.username,
+
+                password:
+                    hashedPassword,
+
+                role:
+                    item.role,
+
+                designation:
+                    item.designation,
+
+                access:
+                    item.access,
+
+                status:
+                    "ACTIVE",
+            });
+
+            console.log(
+                `Created default user: ${item.username}`
+            );
         }
-
-        console.log(
-            "Default users checked."
-        );
-
-    } catch (error) {
-
-        console.error(
-            "User creation error:",
-            error
-        );
     }
+
+    console.log(
+        "Default users checked."
+    );
 }
 
-// ========================================
-// CREATE SAMPLE DATA
-// ========================================
+/* =========================================================
+   AUDIT HELPER
+========================================================= */
 
-async function createSampleData() {
-
+async function createAudit({
+    req,
+    action,
+    event,
+    user,
+    details = {},
+}) {
     try {
+        await Audit.create({
+            action,
+            event:
+                event || action,
 
-        // --------------------------------
-        // DO NOT CREATE SAMPLE PROJECTS
-        // IF GOVERNMENT PROJECTS EXIST
-        // --------------------------------
+            username:
+                user?.username ||
+                req?.user?.username ||
+                "",
 
-        const projectCount =
-            await Project.countDocuments();
+            role:
+                user?.role ||
+                req?.user?.role ||
+                "",
 
-        console.log(
-            "Projects in database:",
-            projectCount
-        );
+            userId:
+                user?.id ||
+                req?.user?.id ||
+                "",
 
-        // --------------------------------
-        // LAND
-        // --------------------------------
+            details,
 
-        const landCount =
-            await Land.countDocuments();
-
-        if (landCount === 0) {
-
-            await Land.insertMany([
-                {
-                    parcelId: "LP-1001",
-                    projectId: "PRJ-001",
-                    state: "Uttar Pradesh",
-                    district: "Bareilly",
-                    village: "Bhojipura",
-                    landType: "Agricultural",
-                    areaAcres: 120,
-                    acquisitionStatus: "Acquired",
-                    litigationFlag: "No",
-                    latitude: 28.3670,
-                    longitude: 79.4304
-                },
-
-                {
-                    parcelId: "LP-1002",
-                    projectId: "PRJ-001",
-                    state: "Uttar Pradesh",
-                    district: "Bareilly",
-                    village: "Faridpur",
-                    landType: "Agricultural",
-                    areaAcres: 85,
-                    acquisitionStatus: "Pending",
-                    litigationFlag: "Yes",
-                    latitude: 28.2080,
-                    longitude: 79.5400
-                },
-
-                {
-                    parcelId: "LP-1003",
-                    projectId: "PRJ-002",
-                    state: "Uttar Pradesh",
-                    district: "Noida",
-                    village: "Jewar",
-                    landType: "Commercial",
-                    areaAcres: 200,
-                    acquisitionStatus: "Acquired",
-                    litigationFlag: "No",
-                    latitude: 28.1220,
-                    longitude: 77.5570
-                },
-
-                {
-                    parcelId: "LP-1004",
-                    projectId: "PRJ-003",
-                    state: "Bihar",
-                    district: "Patna",
-                    village: "Bihta",
-                    landType: "Agricultural",
-                    areaAcres: 150,
-                    acquisitionStatus: "Under Review",
-                    litigationFlag: "Yes",
-                    latitude: 25.5610,
-                    longitude: 84.8710
-                },
-
-                {
-                    parcelId: "LP-1005",
-                    projectId: "PRJ-004",
-                    state: "Delhi",
-                    district: "New Delhi",
-                    village: "Dwarka",
-                    landType: "Government",
-                    areaAcres: 75,
-                    acquisitionStatus: "Acquired",
-                    litigationFlag: "No",
-                    latitude: 28.5921,
-                    longitude: 77.0460
-                },
-
-                {
-                    parcelId: "LP-1006",
-                    projectId: "PRJ-005",
-                    state: "Rajasthan",
-                    district: "Jaipur",
-                    village: "Chomu",
-                    landType: "Agricultural",
-                    areaAcres: 300,
-                    acquisitionStatus: "Pending",
-                    litigationFlag: "No",
-                    latitude: 27.9680,
-                    longitude: 75.9800
-                }
-            ]);
-
-            console.log(
-                "Sample land parcels created."
-            );
-        }
-
-        // --------------------------------
-        // COMPENSATION
-        // --------------------------------
-        // IMPORTANT:
-        // Do NOT use countDocuments() === 0
-        // because existing zero-value records
-        // may already exist.
-        // --------------------------------
-
-        const demoCompensations = [
-
-            {
-                compensationId: "COMP-001",
-                projectId: "LA-2024-00004",
-                parcelId: "LP-1001",
-                ownerName: "Ramesh Kumar",
-                awardedAmount: 125000000,
-                paidAmount: 90000000,
-                status: "Partial"
-            },
-
-            {
-                compensationId: "COMP-002",
-                projectId: "LA-2024-00005",
-                parcelId: "LP-1003",
-                ownerName: "Suresh Singh",
-                awardedAmount: 85000000,
-                paidAmount: 85000000,
-                status: "Paid"
-            },
-
-            {
-                compensationId: "COMP-003",
-                projectId: "LA-2026-00006",
-                parcelId: "LP-1004",
-                ownerName: "Anil Kumar",
-                awardedAmount: 150000000,
-                paidAmount: 60000000,
-                status: "Partial"
-            }
-        ];
-
-        for (const item of demoCompensations) {
-
-            await Compensation.updateOne(
-                {
-                    compensationId:
-                        item.compensationId
-                },
-
-                {
-                    $setOnInsert: item
-                },
-
-                {
-                    upsert: true
-                }
-            );
-        }
-
-        console.log(
-            "Demo compensation records checked."
-        );
-
-        // --------------------------------
-        // LEGAL CASES
-        // --------------------------------
-
-        const caseCount =
-            await LegalCase.countDocuments();
-
-        if (caseCount === 0) {
-
-            await LegalCase.insertMany([
-                {
-                    caseId: "CASE-001",
-                    projectId: "PRJ-001",
-                    parcelId: "LP-1002",
-                    title: "Land Ownership Dispute",
-                    description:
-                        "Ownership verification pending",
-                    status: "Pending",
-                    priority: "High",
-                    objectionPending: true
-                },
-
-                {
-                    caseId: "CASE-002",
-                    projectId: "PRJ-003",
-                    parcelId: "LP-1004",
-                    title: "Compensation Dispute",
-                    description:
-                        "Compensation amount challenged",
-                    status: "Under Review",
-                    priority: "Critical",
-                    objectionPending: true
-                },
-
-                {
-                    caseId: "CASE-003",
-                    projectId: "PRJ-005",
-                    parcelId: "LP-1006",
-                    title: "Environmental Clearance",
-                    description:
-                        "Clearance review in progress",
-                    status: "Pending",
-                    priority: "Medium",
-                    objectionPending: false
-                }
-            ]);
-
-            console.log(
-                "Sample legal cases created."
-            );
-        }
-
-        console.log(
-            "Sample data checked."
-        );
-
+            ip:
+                req?.ip ||
+                "",
+        });
     } catch (error) {
-
         console.error(
-            "Sample data error:",
-            error
+            "Audit error:",
+            error.message
         );
     }
 }
 
-// ========================================
-// AUTH MIDDLEWARE
-// ========================================
+/* =========================================================
+   NOTIFICATION HELPER
+========================================================= */
 
-function authenticateToken(req, res, next) {
+async function createNotification({
+    title,
+    message,
+    type = "info",
+    targetRole = "",
+    targetUserId = "",
+    createdBy = "",
+}) {
+    try {
+        const notification =
+            await Notification.create({
+                title,
+                message,
+                type,
+                targetRole,
+                targetUserId,
+                createdBy,
+            });
 
+        /*
+         * Send to specific user.
+         */
+        if (targetUserId) {
+            io.to(
+                `user:${targetUserId}`
+            ).emit(
+                "notification",
+                notification
+            );
+        }
+
+        /*
+         * Send to entire role.
+         */
+        if (targetRole) {
+            io.to(
+                `role:${targetRole}`
+            ).emit(
+                "notification",
+                notification
+            );
+        }
+
+        /*
+         * Broadcast general notification.
+         */
+        if (
+            !targetRole &&
+            !targetUserId
+        ) {
+            io.emit(
+                "notification",
+                notification
+            );
+        }
+
+        return notification;
+    } catch (error) {
+        console.error(
+            "Notification error:",
+            error.message
+        );
+
+        return null;
+    }
+}
+
+/* =========================================================
+   JWT MIDDLEWARE
+========================================================= */
+
+function authenticateToken(
+    req,
+    res,
+    next
+) {
     const authHeader =
         req.headers.authorization;
 
     const token =
         authHeader &&
-        authHeader.startsWith("Bearer ")
-            ? authHeader.split(" ")[1]
+        authHeader.startsWith(
+            "Bearer "
+        )
+            ? authHeader.substring(
+                  7
+              )
             : null;
 
     if (!token) {
-
         return res
             .status(401)
             .json({
                 success: false,
                 message:
-                    "Access token required"
+                    "Authentication required.",
             });
     }
 
     try {
-
         const decoded =
             jwt.verify(
                 token,
@@ -833,40 +1041,41 @@ function authenticateToken(req, res, next) {
         req.user = decoded;
 
         next();
-
     } catch (error) {
-
         return res
             .status(403)
             .json({
                 success: false,
                 message:
-                    "Invalid or expired token"
+                    "Invalid or expired token.",
             });
     }
 }
 
-// ========================================
-// ROLE AUTHORIZATION
-// ========================================
+/* =========================================================
+   ROLE MIDDLEWARE
+========================================================= */
 
-function authorizeRoles(...allowedRoles) {
-
-    return (req, res, next) => {
-
+function authorizeRoles(
+    ...allowedRoles
+) {
+    return (
+        req,
+        res,
+        next
+    ) => {
         if (
             !req.user ||
             !allowedRoles.includes(
                 req.user.role
             )
         ) {
-
             return res
                 .status(403)
                 .json({
                     success: false,
                     message:
-                        "You do not have permission"
+                        "You do not have permission to access this resource.",
                 });
         }
 
@@ -874,77 +1083,181 @@ function authorizeRoles(...allowedRoles) {
     };
 }
 
-// ========================================
-// HEALTH CHECK
-// ========================================
+/* =========================================================
+   PROJECT NORMALIZER
+========================================================= */
+
+function normalizeProject(
+    project
+) {
+    if (!project) {
+        return project;
+    }
+
+    const landRequired =
+        Number(
+            project.landRequiredAcres ||
+                0
+        );
+
+    const landAcquired =
+        Number(
+            project.landAcquiredAcres ||
+                0
+        );
+
+    let progress =
+        Number(
+            project.acquisitionProgressPct
+        );
+
+    if (
+        !Number.isFinite(
+            progress
+        )
+    ) {
+        progress =
+            landRequired > 0
+                ? (landAcquired /
+                      landRequired) *
+                  100
+                : 0;
+    }
+
+    progress = Math.max(
+        0,
+        Math.min(
+            100,
+            progress
+        )
+    );
+
+    return {
+        ...project,
+
+        id:
+            project._id?.toString?.() ||
+            project.id,
+
+        landRequiredAcres:
+            landRequired,
+
+        landAcquiredAcres:
+            landAcquired,
+
+        acquisitionProgressPct:
+            Number(
+                progress.toFixed(2)
+            ),
+
+        projectStatus:
+            project.projectStatus ||
+            project.status ||
+            "In Progress",
+    };
+}
+
+/* =========================================================
+   HEALTH
+========================================================= */
 
 app.get(
     "/api/health",
     (req, res) => {
-
         res.json({
             success: true,
-            message:
-                "Backend is running",
+            service: "NLAMS",
+            status: "online",
             database:
-                mongoose.connection.readyState === 1
+                mongoose.connection.readyState ===
+                1
                     ? "connected"
-                    : "disconnected"
+                    : "disconnected",
+            time:
+                new Date().toISOString(),
         });
     }
 );
 
-// ========================================
-// LOGIN
-// ========================================
+/* =========================================================
+   ROOT
+========================================================= */
+
+app.get(
+    "/",
+    (req, res) => {
+        res.json({
+            success: true,
+
+            message:
+                "SIH Land Management Backend Running",
+
+            database:
+                mongoose.connection.readyState ===
+                1
+                    ? "connected"
+                    : "disconnected",
+
+            environment:
+                NODE_ENV,
+        });
+    }
+);
+
+/* =========================================================
+   AUTH LOGIN
+========================================================= */
 
 app.post(
     "/api/auth/login",
     async (req, res) => {
-
         try {
-
             const {
                 username,
-                password
+                password,
             } = req.body;
 
-            if (!username || !password) {
-
+            if (
+                !username ||
+                !password
+            ) {
                 return res
                     .status(400)
                     .json({
                         success: false,
                         message:
-                            "Username and password are required"
+                            "Username and password are required.",
                     });
             }
 
             const user =
                 await User.findOne({
                     username:
-                        username.trim()
+                        String(
+                            username
+                        ).trim(),
                 });
 
             if (!user) {
-
                 return res
                     .status(401)
                     .json({
                         success: false,
                         message:
-                            "Invalid username or password"
+                            "Invalid username or password.",
                     });
             }
 
-            if (user.status !== "ACTIVE") {
-
+            if (
+                user.status !==
+                "ACTIVE"
+            ) {
                 return res
                     .status(403)
                     .json({
                         success: false,
                         message:
-                            "Account is inactive"
+                            "Account is inactive.",
                     });
             }
 
@@ -955,13 +1268,12 @@ app.post(
                 );
 
             if (!passwordMatch) {
-
                 return res
                     .status(401)
                     .json({
                         success: false,
                         message:
-                            "Invalid username or password"
+                            "Invalid username or password.",
                     });
             }
 
@@ -975,41 +1287,67 @@ app.post(
                             user.username,
 
                         role:
-                            user.role
+                            user.role,
                     },
 
                     JWT_SECRET,
 
                     {
-                        expiresIn: "8h"
+                        expiresIn:
+                            "8h",
                     }
                 );
+
+            await createAudit({
+                req,
+
+                action:
+                    "LOGIN",
+
+                event:
+                    "USER_LOGIN",
+
+                user: {
+                    id:
+                        user._id.toString(),
+
+                    username:
+                        user.username,
+
+                    role:
+                        user.role,
+                },
+            });
 
             res.json({
                 success: true,
 
                 message:
-                    "Login successful",
+                    "Login successful.",
 
                 token,
 
                 user: {
-                    id: user._id,
+                    id:
+                        user._id.toString(),
+
                     username:
                         user.username,
+
                     role:
                         user.role,
+
                     designation:
                         user.designation,
+
                     access:
                         user.access,
+
                     status:
-                        user.status
-                }
+                        user.status,
+                },
             });
-
         } catch (error) {
-
             console.error(
                 "Login error:",
                 error
@@ -1020,203 +1358,227 @@ app.post(
                 .json({
                     success: false,
                     message:
-                        "Server error"
+                        "Login failed.",
                 });
         }
     }
 );
 
-// ========================================
-// CURRENT USER
-// ========================================
+/* =========================================================
+   CURRENT USER
+========================================================= */
 
 app.get(
     "/api/auth/me",
     authenticateToken,
-    async (req, res) => {
-
+    async (
+        req,
+        res
+    ) => {
         try {
-
             const user =
                 await User.findById(
                     req.user.id
-                ).select("-password");
+                ).select(
+                    "-password"
+                );
 
             if (!user) {
-
                 return res
                     .status(404)
                     .json({
                         success: false,
                         message:
-                            "User not found"
+                            "User not found.",
                     });
             }
 
             res.json({
                 success: true,
-                user
+
+                user: {
+                    id:
+                        user._id.toString(),
+
+                    username:
+                        user.username,
+
+                    role:
+                        user.role,
+
+                    designation:
+                        user.designation,
+
+                    access:
+                        user.access,
+
+                    status:
+                        user.status,
+                },
             });
-
         } catch (error) {
-
             res
                 .status(500)
                 .json({
                     success: false,
                     message:
-                        "Server error"
+                        "Unable to validate session.",
                 });
         }
     }
 );
 
-// ========================================
-// DASHBOARD
-// ========================================
+/* =========================================================
+   DASHBOARD
+========================================================= */
 
 app.get(
     "/api/dashboard",
     authenticateToken,
-    async (req, res) => {
-
+    async (
+        req,
+        res
+    ) => {
         try {
-
             const [
-                rawProjects,
+                projects,
                 parcels,
                 cases,
                 compensation,
-                pendingObjections,
-                projectStats
-            ] = await Promise.all([
+            ] =
+                await Promise.all([
+                    Project.find()
+                        .lean(),
 
-                Project.find().lean(),
+                    Land.find()
+                        .lean(),
 
-                Land.find().lean(),
+                    LegalCase.find()
+                        .lean(),
 
-                LegalCase.find().lean(),
-
-                Compensation.find().lean(),
-
-                LegalCase.countDocuments({
-                    objectionPending: true
-                }),
-
-                Project.aggregate([
-                    {
-                        $group: {
-
-                            _id:
-                                "$projectStatus",
-
-                            count: {
-                                $sum: 1
-                            },
-
-                            landRequiredAcres: {
-                                $sum: {
-                                    $ifNull: [
-                                        "$landRequiredAcres",
-                                        0
-                                    ]
-                                }
-                            },
-
-                            landAcquiredAcres: {
-                                $sum: {
-                                    $ifNull: [
-                                        "$landAcquiredAcres",
-                                        0
-                                    ]
-                                }
-                            }
-                        }
-                    }
-                ])
-            ]);
-
-            const projects =
-                rawProjects.map(
-                    normalizeProject
-                );
-
-            // --------------------------------
-            // LAND TOTALS
-            // --------------------------------
+                    Compensation.find()
+                        .lean(),
+                ]);
 
             const totalLandRequired =
                 projects.reduce(
-                    (total, project) =>
-                        total +
+                    (
+                        sum,
+                        item
+                    ) =>
+                        sum +
                         Number(
-                            project.landRequiredAcres || 0
+                            item.landRequiredAcres ||
+                                0
                         ),
                     0
                 );
 
             const totalLandAcquired =
                 projects.reduce(
-                    (total, project) =>
-                        total +
+                    (
+                        sum,
+                        item
+                    ) =>
+                        sum +
                         Number(
-                            project.landAcquiredAcres || 0
+                            item.landAcquiredAcres ||
+                                0
                         ),
                     0
                 );
 
             const acquisitionPercentage =
-                totalLandRequired > 0
-                    ? (
-                        totalLandAcquired /
-                        totalLandRequired
-                    ) * 100
+                totalLandRequired >
+                0
+                    ? (totalLandAcquired /
+                          totalLandRequired) *
+                      100
                     : 0;
-
-            // --------------------------------
-            // COMPENSATION TOTALS
-            // --------------------------------
 
             const awarded =
                 compensation.reduce(
-                    (sum, item) =>
+                    (
+                        sum,
+                        item
+                    ) =>
                         sum +
                         Number(
-                            item.awardedAmount || 0
+                            item.awardedAmount ||
+                                0
                         ),
                     0
                 );
 
             const paid =
                 compensation.reduce(
-                    (sum, item) =>
+                    (
+                        sum,
+                        item
+                    ) =>
                         sum +
                         Number(
-                            item.paidAmount || 0
+                            item.paidAmount ||
+                                0
                         ),
                     0
                 );
 
             const pending =
                 Math.max(
-                    awarded - paid,
+                    awarded -
+                        paid,
                     0
                 );
 
-            // --------------------------------
-            // RISK INDEX
-            // --------------------------------
+            const pendingObjections =
+                cases.filter(
+                    (item) =>
+                        item.objectionPending ===
+                            true ||
+                        item.status ===
+                            "Pending"
+                ).length;
+
+            const statusMap =
+                {};
+
+            for (const project of projects) {
+                const status =
+                    project.projectStatus ||
+                    "In Progress";
+
+                statusMap[
+                    status
+                ] =
+                    (statusMap[
+                        status
+                    ] || 0) + 1;
+            }
+
+            const projectStats =
+                Object.entries(
+                    statusMap
+                ).map(
+                    ([
+                        status,
+                        count,
+                    ]) => ({
+                        status,
+                        count,
+                    })
+                );
 
             const criticalProjects =
                 projects.filter(
-                    project =>
+                    (project) =>
                         project.riskLevel ===
                         "Critical"
                 ).length;
 
             const highRiskProjects =
                 projects.filter(
-                    project =>
+                    (project) =>
                         project.riskLevel ===
                         "High"
                 ).length;
@@ -1224,19 +1586,21 @@ app.get(
             const riskIndex =
                 Math.min(
                     100,
+
                     Math.round(
-                        (pendingObjections * 10) +
-                        (criticalProjects * 20) +
-                        (highRiskProjects * 10)
+                        pendingObjections *
+                            10 +
+                            criticalProjects *
+                                20 +
+                            highRiskProjects *
+                                10
                     )
                 );
 
             res.json({
-
                 success: true,
 
                 totals: {
-
                     projects:
                         projects.length,
 
@@ -1254,33 +1618,31 @@ app.get(
 
                     acquisitionPercentage:
                         Number(
-                            acquisitionPercentage.toFixed(2)
+                            acquisitionPercentage.toFixed(
+                                2
+                            )
                         ),
 
-                    awarded:
-                        awarded,
+                    awarded,
 
-                    paid:
-                        paid,
+                    paid,
 
-                    pending:
-                        pending,
+                    pending,
 
-                    pendingObjections:
-                        pendingObjections
+                    pendingObjections,
                 },
 
                 projectStats,
 
                 risk: {
-
                     index:
                         riskIndex,
 
                     legalRisk:
                         Math.min(
                             100,
-                            pendingObjections * 25
+                            pendingObjections *
+                                25
                         ),
 
                     landRecordRisk:
@@ -1290,12 +1652,10 @@ app.get(
                         56,
 
                     delayProbability:
-                        74
-                }
+                        74,
+                },
             });
-
         } catch (error) {
-
             console.error(
                 "Dashboard error:",
                 error
@@ -1306,42 +1666,49 @@ app.get(
                 .json({
                     success: false,
                     message:
-                        "Error loading dashboard",
+                        "Error loading dashboard.",
                     error:
-                        error.message
+                        error.message,
                 });
         }
     }
 );
 
-// ========================================
-// GET PROJECTS
-// ========================================
+/* =========================================================
+   PROJECTS
+========================================================= */
 
 app.get(
     "/api/projects",
     authenticateToken,
-    async (req, res) => {
-
+    async (
+        req,
+        res
+    ) => {
         try {
-
             const requestedLimit =
-                Number(req.query.limit);
+                Number(
+                    req.query.limit
+                );
 
             const limit =
-                requestedLimit > 0
+                requestedLimit >
+                0
                     ? Math.min(
-                        requestedLimit,
-                        1000
-                    )
+                          requestedLimit,
+                          1000
+                      )
                     : 500;
 
             const rawProjects =
                 await Project.find()
                     .sort({
-                        createdAt: -1
+                        createdAt:
+                            -1,
                     })
-                    .limit(limit)
+                    .limit(
+                        limit
+                    )
                     .lean();
 
             const projects =
@@ -1350,17 +1717,14 @@ app.get(
                 );
 
             res.json({
-
                 success: true,
 
                 count:
                     projects.length,
 
-                projects
+                projects,
             });
-
         } catch (error) {
-
             console.error(
                 "Projects error:",
                 error
@@ -1371,17 +1735,13 @@ app.get(
                 .json({
                     success: false,
                     message:
-                        "Error fetching projects",
+                        "Error fetching projects.",
                     error:
-                        error.message
+                        error.message,
                 });
         }
     }
 );
-
-// ========================================
-// CREATE PROJECT
-// ========================================
 
 app.post(
     "/api/projects",
@@ -1390,29 +1750,76 @@ app.post(
         "ADMINISTRATOR",
         "LAND_OFFICER"
     ),
-    async (req, res) => {
-
+    async (
+        req,
+        res
+    ) => {
         try {
-
             const project =
                 await Project.create({
                     ...req.body,
+
                     createdBy:
-                        req.user.id
+                        req.user.id,
                 });
 
-            res
-                .status(201)
-                .json({
-                    success: true,
+            const normalized =
+                normalizeProject(
+                    project.toObject()
+                );
+
+            await createAudit({
+                req,
+
+                action:
+                    "CREATE_PROJECT",
+
+                event:
+                    "PROJECT_CREATED",
+
+                details: {
+                    projectId:
+                        normalized.projectId,
+                },
+            });
+
+            await createNotification({
+                title:
+                    "New Project Created",
+
+                message:
+                    `${normalized.projectName || normalized.projectId} was added to NLAMS.`,
+
+                type:
+                    "success",
+
+                targetRole:
+                    "LAND_OFFICER",
+
+                createdBy:
+                    req.user.username,
+            });
+
+            io.emit(
+                "workflow:update",
+                {
                     message:
-                        "Project created successfully",
+                        "A new land acquisition project was created.",
                     project:
-                        normalizeProject(project)
-                });
+                        normalized,
+                }
+            );
 
+            res.status(201).json({
+                success: true,
+
+                message:
+                    "Project created successfully.",
+
+                project:
+                    normalized,
+            });
         } catch (error) {
-
             console.error(
                 "Create project error:",
                 error
@@ -1420,24 +1827,23 @@ app.post(
 
             res
                 .status(
-                    error.code === 11000
+                    error.code ===
+                        11000
                         ? 409
                         : 500
                 )
                 .json({
                     success: false,
+
                     message:
-                        error.code === 11000
-                            ? "Project ID already exists"
-                            : error.message
+                        error.code ===
+                        11000
+                            ? "Project ID already exists."
+                            : error.message,
                 });
         }
     }
 );
-
-// ========================================
-// UPDATE PROJECT
-// ========================================
 
 app.put(
     "/api/projects/:id",
@@ -1446,109 +1852,150 @@ app.put(
         "ADMINISTRATOR",
         "LAND_OFFICER"
     ),
-    async (req, res) => {
-
+    async (
+        req,
+        res
+    ) => {
         try {
-
             const project =
                 await Project.findByIdAndUpdate(
                     req.params.id,
                     req.body,
                     {
                         new: true,
-                        runValidators: true
+                        runValidators:
+                            true,
                     }
-                );
+                ).lean();
 
             if (!project) {
-
                 return res
                     .status(404)
                     .json({
                         success: false,
                         message:
-                            "Project not found"
+                            "Project not found.",
                     });
             }
 
-            res.json({
-                success: true,
-                project:
-                    normalizeProject(project)
+            const normalized =
+                normalizeProject(
+                    project
+                );
+
+            await createAudit({
+                req,
+
+                action:
+                    "UPDATE_PROJECT",
+
+                event:
+                    "PROJECT_UPDATED",
+
+                details: {
+                    projectId:
+                        normalized.projectId,
+                },
             });
 
+            io.emit(
+                "workflow:update",
+                {
+                    message:
+                        `${normalized.projectName || normalized.projectId} was updated.`,
+
+                    project:
+                        normalized,
+                }
+            );
+
+            res.json({
+                success: true,
+
+                project:
+                    normalized,
+            });
         } catch (error) {
+            console.error(
+                "Update project error:",
+                error
+            );
 
             res
                 .status(500)
                 .json({
                     success: false,
                     message:
-                        error.message
+                        error.message,
                 });
         }
     }
 );
 
-// ========================================
-// GET LAND
-// ========================================
+/* =========================================================
+   LAND / PARCELS
+========================================================= */
 
 app.get(
     "/api/land",
     authenticateToken,
-    async (req, res) => {
-
+    async (
+        req,
+        res
+    ) => {
         try {
-
             const requestedLimit =
-                Number(req.query.limit);
+                Number(
+                    req.query.limit
+                );
 
             const limit =
-                requestedLimit > 0
+                requestedLimit >
+                0
                     ? Math.min(
-                        requestedLimit,
-                        1000
-                    )
-                    : 100;
+                          requestedLimit,
+                          2000
+                      )
+                    : 1000;
 
-            const parcels =
+            const land =
                 await Land.find()
                     .sort({
-                        createdAt: -1
+                        createdAt:
+                            -1,
                     })
-                    .limit(limit)
+                    .limit(
+                        limit
+                    )
                     .lean();
 
             res.json({
-
                 success: true,
 
                 count:
-                    parcels.length,
+                    land.length,
 
-                parcels,
+                land,
 
-                land:
-                    parcels
+                parcels:
+                    land,
             });
-
         } catch (error) {
+            console.error(
+                "Land error:",
+                error
+            );
 
             res
                 .status(500)
                 .json({
                     success: false,
                     message:
-                        "Error fetching land parcels"
+                        "Error fetching land.",
                 });
         }
     }
 );
-
-// ========================================
-// CREATE LAND
-// ========================================
 
 app.post(
     "/api/land",
@@ -1557,46 +2004,73 @@ app.post(
         "ADMINISTRATOR",
         "LAND_OFFICER"
     ),
-    async (req, res) => {
-
+    async (
+        req,
+        res
+    ) => {
         try {
-
             const parcel =
-                await Land.create({
-                    ...req.body,
-                    createdBy:
-                        req.user.id
-                });
+                await Land.create(
+                    req.body
+                );
 
-            res
-                .status(201)
-                .json({
-                    success: true,
-                    parcel
-                });
+            await createAudit({
+                req,
 
+                action:
+                    "CREATE_PARCEL",
+
+                event:
+                    "LAND_PARCEL_CREATED",
+
+                details: {
+                    parcelId:
+                        parcel.parcelId,
+                },
+            });
+
+            io.emit(
+                "workflow:update",
+                {
+                    message:
+                        `Land parcel ${parcel.parcelId} was created.`,
+                    parcel,
+                }
+            );
+
+            res.status(201).json({
+                success: true,
+
+                message:
+                    "Land parcel created successfully.",
+
+                parcel,
+            });
         } catch (error) {
+            console.error(
+                "Create land error:",
+                error
+            );
 
             res
                 .status(
-                    error.code === 11000
+                    error.code ===
+                        11000
                         ? 409
                         : 500
                 )
                 .json({
                     success: false,
+
                     message:
-                        error.code === 11000
-                            ? "Parcel ID already exists"
-                            : error.message
+                        error.code ===
+                        11000
+                            ? "Parcel ID already exists."
+                            : error.message,
                 });
         }
     }
 );
-
-// ========================================
-// UPDATE LAND
-// ========================================
 
 app.put(
     "/api/land/:id",
@@ -1605,101 +2079,143 @@ app.put(
         "ADMINISTRATOR",
         "LAND_OFFICER"
     ),
-    async (req, res) => {
-
+    async (
+        req,
+        res
+    ) => {
         try {
-
             const parcel =
                 await Land.findByIdAndUpdate(
                     req.params.id,
                     req.body,
                     {
                         new: true,
-                        runValidators: true
+                        runValidators:
+                            true,
                     }
-                );
+                ).lean();
 
             if (!parcel) {
-
                 return res
                     .status(404)
                     .json({
                         success: false,
                         message:
-                            "Parcel not found"
+                            "Parcel not found.",
                     });
             }
 
-            res.json({
-                success: true,
-                parcel
+            await createAudit({
+                req,
+
+                action:
+                    "UPDATE_PARCEL",
+
+                event:
+                    "LAND_PARCEL_UPDATED",
+
+                details: {
+                    parcelId:
+                        parcel.parcelId,
+                },
             });
 
+            io.emit(
+                "workflow:update",
+                {
+                    message:
+                        `Land parcel ${parcel.parcelId} was updated.`,
+                    parcel,
+                }
+            );
+
+            res.json({
+                success: true,
+                parcel,
+            });
         } catch (error) {
+            console.error(
+                "Update land error:",
+                error
+            );
 
             res
                 .status(500)
                 .json({
                     success: false,
                     message:
-                        error.message
+                        error.message,
                 });
         }
     }
 );
 
-// ========================================
-// GET COMPENSATION
-// ========================================
+/* =========================================================
+   COMPENSATION
+========================================================= */
 
 app.get(
     "/api/compensation",
     authenticateToken,
-    async (req, res) => {
-
+    async (
+        req,
+        res
+    ) => {
         try {
-
             const requestedLimit =
-                Number(req.query.limit);
+                Number(
+                    req.query.limit
+                );
 
             const limit =
-                requestedLimit > 0
+                requestedLimit >
+                0
                     ? Math.min(
-                        requestedLimit,
-                        1000
-                    )
-                    : 100;
+                          requestedLimit,
+                          1000
+                      )
+                    : 500;
 
             const compensation =
                 await Compensation.find()
                     .sort({
-                        createdAt: -1
+                        createdAt:
+                            -1,
                     })
-                    .limit(limit)
+                    .limit(
+                        limit
+                    )
                     .lean();
 
-            const totalAwarded =
+            const awarded =
                 compensation.reduce(
-                    (sum, item) =>
+                    (
+                        sum,
+                        item
+                    ) =>
                         sum +
                         Number(
-                            item.awardedAmount || 0
+                            item.awardedAmount ||
+                                0
                         ),
                     0
                 );
 
-            const totalPaid =
+            const paid =
                 compensation.reduce(
-                    (sum, item) =>
+                    (
+                        sum,
+                        item
+                    ) =>
                         sum +
                         Number(
-                            item.paidAmount || 0
+                            item.paidAmount ||
+                                0
                         ),
                     0
                 );
 
             res.json({
-
                 success: true,
 
                 count:
@@ -1711,24 +2227,19 @@ app.get(
                     compensation,
 
                 totals: {
+                    awarded,
 
-                    awarded:
-                        totalAwarded,
-
-                    paid:
-                        totalPaid,
+                    paid,
 
                     pending:
                         Math.max(
-                            totalAwarded -
-                            totalPaid,
+                            awarded -
+                                paid,
                             0
-                        )
-                }
+                        ),
+                },
             });
-
         } catch (error) {
-
             console.error(
                 "Compensation error:",
                 error
@@ -1739,15 +2250,11 @@ app.get(
                 .json({
                     success: false,
                     message:
-                        "Error fetching compensation"
+                        "Error fetching compensation.",
                 });
         }
     }
 );
-
-// ========================================
-// CREATE COMPENSATION
-// ========================================
 
 app.post(
     "/api/compensation",
@@ -1756,100 +2263,146 @@ app.post(
         "ADMINISTRATOR",
         "LAND_OFFICER"
     ),
-    async (req, res) => {
-
+    async (
+        req,
+        res
+    ) => {
         try {
-
             const item =
-                await Compensation.create({
-                    ...req.body,
-                    createdBy:
-                        req.user.id
-                });
+                await Compensation.create(
+                    {
+                        ...req.body,
 
-            res
-                .status(201)
-                .json({
-                    success: true,
-                    compensation:
-                        item
-                });
+                        createdBy:
+                            req.user.id,
+                    }
+                );
 
+            await createAudit({
+                req,
+
+                action:
+                    "CREATE_COMPENSATION",
+
+                event:
+                    "COMPENSATION_CREATED",
+
+                details: {
+                    compensationId:
+                        item.compensationId,
+                },
+            });
+
+            await createNotification({
+                title:
+                    "Compensation Updated",
+
+                message:
+                    `Compensation ${item.compensationId} was created.`,
+
+                type:
+                    "info",
+
+                targetRole:
+                    "LAND_OFFICER",
+
+                createdBy:
+                    req.user.username,
+            });
+
+            res.status(201).json({
+                success: true,
+
+                compensation:
+                    item,
+            });
         } catch (error) {
+            console.error(
+                "Create compensation error:",
+                error
+            );
 
             res
                 .status(
-                    error.code === 11000
+                    error.code ===
+                        11000
                         ? 409
                         : 500
                 )
                 .json({
                     success: false,
+
                     message:
-                        error.code === 11000
-                            ? "Compensation ID already exists"
-                            : error.message
+                        error.code ===
+                        11000
+                            ? "Compensation ID already exists."
+                            : error.message,
                 });
         }
     }
 );
 
-// ========================================
-// GET LEGAL CASES
-// ========================================
+/* =========================================================
+   LEGAL CASES
+========================================================= */
 
 app.get(
     "/api/cases",
     authenticateToken,
-    async (req, res) => {
-
+    async (
+        req,
+        res
+    ) => {
         try {
-
             const requestedLimit =
-                Number(req.query.limit);
+                Number(
+                    req.query.limit
+                );
 
             const limit =
-                requestedLimit > 0
+                requestedLimit >
+                0
                     ? Math.min(
-                        requestedLimit,
-                        1000
-                    )
-                    : 100;
+                          requestedLimit,
+                          1000
+                      )
+                    : 500;
 
             const cases =
                 await LegalCase.find()
                     .sort({
-                        createdAt: -1
+                        createdAt:
+                            -1,
                     })
-                    .limit(limit)
+                    .limit(
+                        limit
+                    )
                     .lean();
 
             res.json({
-
                 success: true,
 
                 count:
                     cases.length,
 
-                cases
+                cases,
             });
-
         } catch (error) {
+            console.error(
+                "Cases error:",
+                error
+            );
 
             res
                 .status(500)
                 .json({
                     success: false,
                     message:
-                        "Error fetching cases"
+                        "Error fetching cases.",
                 });
         }
     }
 );
-
-// ========================================
-// CREATE LEGAL CASE
-// ========================================
 
 app.post(
     "/api/cases",
@@ -1858,46 +2411,596 @@ app.post(
         "ADMINISTRATOR",
         "LEGAL_OFFICER"
     ),
-    async (req, res) => {
-
+    async (
+        req,
+        res
+    ) => {
         try {
-
             const legalCase =
-                await LegalCase.create({
-                    ...req.body,
-                    createdBy:
-                        req.user.id
-                });
+                await LegalCase.create(
+                    {
+                        ...req.body,
 
-            res
-                .status(201)
-                .json({
-                    success: true,
-                    legalCase
-                });
+                        createdBy:
+                            req.user.id,
+                    }
+                );
 
+            await createAudit({
+                req,
+
+                action:
+                    "CREATE_CASE",
+
+                event:
+                    "LEGAL_CASE_CREATED",
+
+                details: {
+                    caseId:
+                        legalCase.caseId,
+                },
+            });
+
+            await createNotification({
+                title:
+                    "New Legal Case",
+
+                message:
+                    `Legal case ${legalCase.caseId} was created.`,
+
+                type:
+                    "warning",
+
+                targetRole:
+                    "LEGAL_OFFICER",
+
+                createdBy:
+                    req.user.username,
+            });
+
+            res.status(201).json({
+                success: true,
+
+                legalCase,
+            });
         } catch (error) {
+            console.error(
+                "Create case error:",
+                error
+            );
 
             res
                 .status(
-                    error.code === 11000
+                    error.code ===
+                        11000
                         ? 409
                         : 500
                 )
                 .json({
                     success: false,
+
                     message:
-                        error.code === 11000
-                            ? "Case ID already exists"
-                            : error.message
+                        error.code ===
+                        11000
+                            ? "Case ID already exists."
+                            : error.message,
                 });
         }
     }
 );
 
-// ========================================
-// ADMIN DASHBOARD
-// ========================================
+/* =========================================================
+   DOCUMENT UPLOAD
+========================================================= */
+
+const storage =
+    multer.diskStorage({
+        destination:
+            function (
+                req,
+                file,
+                cb
+            ) {
+                cb(
+                    null,
+                    uploadDirectory
+                );
+            },
+
+        filename:
+            function (
+                req,
+                file,
+                cb
+            ) {
+                const extension =
+                    path.extname(
+                        file.originalname
+                    );
+
+                const baseName =
+                    path
+                        .basename(
+                            file.originalname,
+                            extension
+                        )
+                        .replace(
+                            /[^a-zA-Z0-9_-]/g,
+                            "_"
+                        );
+
+                const uniqueName =
+                    `${Date.now()}-${Math.round(
+                        Math.random() *
+                            1e9
+                    )}-${baseName}${extension}`;
+
+                cb(
+                    null,
+                    uniqueName
+                );
+            },
+    });
+
+const upload =
+    multer({
+        storage,
+
+        limits: {
+            fileSize:
+                10 * 1024 * 1024,
+        },
+
+        fileFilter:
+            function (
+                req,
+                file,
+                cb
+            ) {
+                const allowedTypes =
+                    [
+                        "application/pdf",
+                        "image/jpeg",
+                        "image/png",
+                        "image/webp",
+                    ];
+
+                if (
+                    allowedTypes.includes(
+                        file.mimetype
+                    )
+                ) {
+                    cb(
+                        null,
+                        true
+                    );
+                } else {
+                    cb(
+                        new Error(
+                            "Only PDF, JPG, PNG and WEBP files are allowed."
+                        )
+                    );
+                }
+            },
+    });
+
+app.post(
+    "/api/documents/upload",
+    authenticateToken,
+    authorizeRoles(
+        "ADMINISTRATOR",
+        "LAND_OFFICER",
+        "LEGAL_OFFICER"
+    ),
+    upload.single(
+        "file"
+    ),
+    async (
+        req,
+        res
+    ) => {
+        try {
+            if (!req.file) {
+                return res
+                    .status(400)
+                    .json({
+                        success: false,
+                        message:
+                            "No file uploaded.",
+                    });
+            }
+
+            const documentId =
+                `DOC-${Date.now()}-${Math.floor(
+                    Math.random() *
+                        10000
+                )}`;
+
+            const document =
+                await Document.create({
+                    documentId,
+
+                    name:
+                        req.body.name ||
+                        req.file.originalname,
+
+                    originalName:
+                        req.file.originalname,
+
+                    fileName:
+                        req.file.filename,
+
+                    mimeType:
+                        req.file.mimetype,
+
+                    size:
+                        req.file.size,
+
+                    url:
+                        `/uploads/${req.file.filename}`,
+
+                    projectId:
+                        req.body.projectId ||
+                        "",
+
+                    parcelId:
+                        req.body.parcelId ||
+                        "",
+
+                    uploadedBy:
+                        req.user.username,
+
+                    uploadedByRole:
+                        req.user.role,
+
+                    status:
+                        "UPLOADED",
+                });
+
+            await createAudit({
+                req,
+
+                action:
+                    "UPLOAD_DOCUMENT",
+
+                event:
+                    "DOCUMENT_UPLOADED",
+
+                details: {
+                    documentId,
+                    fileName:
+                        req.file.originalname,
+                    projectId:
+                        req.body.projectId ||
+                        "",
+                },
+            });
+
+            /*
+             * Land Officer uploads a document:
+             * notify Legal Officer.
+             */
+            if (
+                req.user.role ===
+                "LAND_OFFICER"
+            ) {
+                await createNotification({
+                    title:
+                        "New Document Received",
+
+                    message:
+                        `${req.file.originalname} was uploaded by Land Officer and is available for Legal Officer review.`,
+
+                    type:
+                        "info",
+
+                    targetRole:
+                        "LEGAL_OFFICER",
+
+                    createdBy:
+                        req.user.username,
+                });
+            }
+
+            /*
+             * Legal Officer uploads:
+             * notify Land Officers.
+             */
+            if (
+                req.user.role ===
+                "LEGAL_OFFICER"
+            ) {
+                await createNotification({
+                    title:
+                        "Legal Document Updated",
+
+                    message:
+                        `${req.file.originalname} was uploaded by Legal Officer.`,
+
+                    type:
+                        "info",
+
+                    targetRole:
+                        "LAND_OFFICER",
+
+                    createdBy:
+                        req.user.username,
+                });
+            }
+
+            io.emit(
+                "workflow:update",
+                {
+                    message:
+                        "A new document was uploaded.",
+                    document,
+                }
+            );
+
+            res.status(201).json({
+                success: true,
+
+                message:
+                    "Document uploaded successfully.",
+
+                document,
+            });
+        } catch (error) {
+            console.error(
+                "Document upload error:",
+                error
+            );
+
+            /*
+             * Remove uploaded file if DB
+             * operation failed.
+             */
+            if (
+                req.file?.path &&
+                fs.existsSync(
+                    req.file.path
+                )
+            ) {
+                try {
+                    fs.unlinkSync(
+                        req.file.path
+                    );
+                } catch {}
+            }
+
+            res
+                .status(500)
+                .json({
+                    success: false,
+                    message:
+                        error.message ||
+                        "Document upload failed.",
+                });
+        }
+    }
+);
+
+/* =========================================================
+   DOCUMENT LIST
+========================================================= */
+
+app.get(
+    "/api/documents",
+    authenticateToken,
+    async (
+        req,
+        res
+    ) => {
+        try {
+            const documents =
+                await Document.find()
+                    .sort({
+                        createdAt:
+                            -1,
+                    })
+                    .limit(500)
+                    .lean();
+
+            res.json({
+                success: true,
+
+                count:
+                    documents.length,
+
+                documents,
+            });
+        } catch (error) {
+            console.error(
+                "Documents error:",
+                error
+            );
+
+            res
+                .status(500)
+                .json({
+                    success: false,
+                    message:
+                        "Error fetching documents.",
+                });
+        }
+    }
+);
+
+/* =========================================================
+   NOTIFICATIONS
+========================================================= */
+
+app.get(
+    "/api/notifications",
+    authenticateToken,
+    async (
+        req,
+        res
+    ) => {
+        try {
+            const userId =
+                req.user.id;
+
+            const role =
+                req.user.role;
+
+            const notifications =
+                await Notification.find(
+                    {
+                        $or: [
+                            {
+                                targetUserId:
+                                    userId,
+                            },
+
+                            {
+                                targetRole:
+                                    role,
+                            },
+
+                            {
+                                targetRole:
+                                    "",
+                                targetUserId:
+                                    "",
+                            },
+                        ],
+                    }
+                )
+                    .sort({
+                        createdAt:
+                            -1,
+                    })
+                    .limit(100)
+                    .lean();
+
+            res.json({
+                success: true,
+
+                count:
+                    notifications.length,
+
+                notifications,
+            });
+        } catch (error) {
+            console.error(
+                "Notifications error:",
+                error
+            );
+
+            res
+                .status(500)
+                .json({
+                    success: false,
+                    message:
+                        "Error fetching notifications.",
+                });
+        }
+    }
+);
+
+/* =========================================================
+   MARK NOTIFICATION READ
+========================================================= */
+
+app.patch(
+    "/api/notifications/:id/read",
+    authenticateToken,
+    async (
+        req,
+        res
+    ) => {
+        try {
+            const notification =
+                await Notification.findByIdAndUpdate(
+                    req.params.id,
+                    {
+                        read: true,
+                    },
+                    {
+                        new: true,
+                    }
+                ).lean();
+
+            if (!notification) {
+                return res
+                    .status(404)
+                    .json({
+                        success: false,
+                        message:
+                            "Notification not found.",
+                    });
+            }
+
+            res.json({
+                success: true,
+
+                notification,
+            });
+        } catch (error) {
+            res
+                .status(500)
+                .json({
+                    success: false,
+                    message:
+                        error.message,
+                });
+        }
+    }
+);
+
+/* =========================================================
+   AUDIT
+========================================================= */
+
+app.get(
+    "/api/audit",
+    authenticateToken,
+    authorizeRoles(
+        "ADMINISTRATOR"
+    ),
+    async (
+        req,
+        res
+    ) => {
+        try {
+            const audit =
+                await Audit.find()
+                    .sort({
+                        createdAt:
+                            -1,
+                    })
+                    .limit(500)
+                    .lean();
+
+            res.json({
+                success: true,
+
+                count:
+                    audit.length,
+
+                audit,
+            });
+        } catch (error) {
+            console.error(
+                "Audit error:",
+                error
+            );
+
+            res
+                .status(500)
+                .json({
+                    success: false,
+                    message:
+                        "Error fetching audit trail.",
+                });
+        }
+    }
+);
+
+/* =========================================================
+   ADMIN DASHBOARD
+========================================================= */
 
 app.get(
     "/api/admin/dashboard",
@@ -1905,21 +3008,25 @@ app.get(
     authorizeRoles(
         "ADMINISTRATOR"
     ),
-    (req, res) => {
-
+    async (
+        req,
+        res
+    ) => {
         res.json({
             success: true,
+
             message:
-                "Administrator access granted",
+                "Administrator access granted.",
+
             access:
-                "Full System"
+                "Full System",
         });
     }
 );
 
-// ========================================
-// LAND OFFICER DASHBOARD
-// ========================================
+/* =========================================================
+   LAND OFFICER DASHBOARD
+========================================================= */
 
 app.get(
     "/api/land/dashboard",
@@ -1928,19 +3035,22 @@ app.get(
         "ADMINISTRATOR",
         "LAND_OFFICER"
     ),
-    (req, res) => {
-
+    async (
+        req,
+        res
+    ) => {
         res.json({
             success: true,
+
             message:
-                "Land & Projects access granted"
+                "Land & Projects access granted.",
         });
     }
 );
 
-// ========================================
-// LEGAL OFFICER DASHBOARD
-// ========================================
+/* =========================================================
+   LEGAL OFFICER DASHBOARD
+========================================================= */
 
 app.get(
     "/api/legal/dashboard",
@@ -1949,96 +3059,259 @@ app.get(
         "ADMINISTRATOR",
         "LEGAL_OFFICER"
     ),
-    (req, res) => {
-
+    async (
+        req,
+        res
+    ) => {
         res.json({
             success: true,
+
             message:
-                "Legal access granted"
+                "Legal access granted.",
         });
     }
 );
 
-// ========================================
-// ROOT
-// ========================================
-
-app.get(
-    "/",
-    (req, res) => {
-
-        res.json({
-            success: true,
-            message:
-                "SIH Land Management Backend Running",
-            database:
-                mongoose.connection.readyState === 1
-                    ? "connected"
-                    : "disconnected"
-        });
-    }
-);
-
-// ========================================
-// 404
-// ========================================
+/* =========================================================
+   404
+========================================================= */
 
 app.use(
     (req, res) => {
-
         res
             .status(404)
             .json({
                 success: false,
+
                 message:
-                    "API route not found"
+                    "API route not found.",
+
+                path:
+                    req.originalUrl,
             });
     }
 );
 
-// ========================================
-// START SERVER
-// ========================================
+/* =========================================================
+   GLOBAL ERROR HANDLER
+========================================================= */
 
-async function startServer() {
+app.use(
+    (
+        error,
+        req,
+        res,
+        next
+    ) => {
+        console.error(
+            "Global error:",
+            error
+        );
 
+        if (
+            error.message ===
+            "CORS origin not allowed"
+        ) {
+            return res
+                .status(403)
+                .json({
+                    success: false,
+                    message:
+                        "CORS origin not allowed.",
+                });
+        }
+
+        if (
+            error instanceof
+            multer.MulterError
+        ) {
+            return res
+                .status(400)
+                .json({
+                    success: false,
+                    message:
+                        error.message,
+                });
+        }
+
+        res
+            .status(
+                error.status ||
+                    500
+            )
+            .json({
+                success: false,
+
+                message:
+                    error.message ||
+                    "Internal server error.",
+            });
+    }
+);
+
+/* =========================================================
+   DATABASE CONNECTION
+========================================================= */
+
+async function connectDatabase() {
     try {
-
         await mongoose.connect(
-            MONGO_URI
+            MONGO_URI,
+            {
+                serverSelectionTimeoutMS:
+                    15000,
+            }
         );
 
         console.log(
             "MongoDB connected"
         );
 
+        console.log(
+            "Database:",
+            mongoose.connection.name
+        );
+    } catch (error) {
+        console.error(
+            "MongoDB connection failed:"
+        );
+
+        console.error(
+            error.message
+        );
+
+        process.exit(1);
+    }
+}
+
+/* =========================================================
+   START SERVER
+========================================================= */
+
+async function startServer() {
+    try {
+        await connectDatabase();
+
         await createDefaultUsers();
 
-        await createSampleData();
+        /*
+         * IMPORTANT:
+         * We intentionally do NOT insert fake projects.
+         *
+         * Your existing MongoDB projects are preserved.
+         */
 
-        app.listen(
+        const projectCount =
+            await Project.countDocuments();
+
+        const landCount =
+            await Land.countDocuments();
+
+        const compensationCount =
+            await Compensation.countDocuments();
+
+        const caseCount =
+            await LegalCase.countDocuments();
+
+        console.log(
+            "Projects in database:",
+            projectCount
+        );
+
+        console.log(
+            "Land parcels in database:",
+            landCount
+        );
+
+        console.log(
+            "Compensation records:",
+            compensationCount
+        );
+
+        console.log(
+            "Legal cases:",
+            caseCount
+        );
+
+        server.listen(
             PORT,
+            "0.0.0.0",
             () => {
-
                 console.log(
-                    `Server running on port ${PORT}`
+                    `NLAMS server running on port ${PORT}`
                 );
 
                 console.log(
-                    `API: http://localhost:${PORT}/api/health`
+                    `http://localhost:${PORT}`
+                );
+
+                console.log(
+                    `Environment: ${NODE_ENV}`
                 );
             }
         );
-
     } catch (error) {
-
         console.error(
-            "Server startup error:",
+            "Server startup failed:",
             error
         );
 
         process.exit(1);
     }
 }
+
+/* =========================================================
+   PROCESS HANDLERS
+========================================================= */
+
+process.on(
+    "SIGINT",
+    async () => {
+        console.log(
+            "\nShutting down NLAMS..."
+        );
+
+        await mongoose.connection.close();
+
+        server.close(() => {
+            process.exit(0);
+        });
+    }
+);
+
+process.on(
+    "SIGTERM",
+    async () => {
+        await mongoose.connection.close();
+
+        server.close(() => {
+            process.exit(0);
+        });
+    }
+);
+
+process.on(
+    "uncaughtException",
+    (error) => {
+        console.error(
+            "Uncaught exception:",
+            error
+        );
+    }
+);
+
+process.on(
+    "unhandledRejection",
+    (error) => {
+        console.error(
+            "Unhandled rejection:",
+            error
+        );
+    }
+);
+
+/* =========================================================
+   START
+========================================================= */
 
 startServer();

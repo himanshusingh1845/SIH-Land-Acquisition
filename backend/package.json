@@ -1,23 +1,22 @@
 {
-  "name": "national-land-system-backend",
-  "version": "1.0.0",
-  "description": "Backend for National Land Acquisition and Management System",
+  "name": "nlams-backend",
+  "version": "4.0.0",
+  "description": "National Land Acquisition Management System Backend",
   "main": "server.js",
- "scripts": {
-  "start": "node server.js",
-  "dev": "nodemon server.js"
-},
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "dependencies": {
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "mongoose": "^9.9.4"
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
   },
-  "devDependencies": {
-    "nodemon": "^3.1.14"
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.9.5",
+    "multer": "^1.4.5-lts.1",
+    "socket.io": "^4.8.1"
   }
 }
