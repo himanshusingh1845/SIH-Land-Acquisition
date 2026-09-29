@@ -13,87 +13,72 @@ const path = require("path");
 
 require("dotenv").config();
 
-/* =========================================================
-   APP
-========================================================= */
-
 const app = express();
 const server = http.createServer(app);
-
-/* =========================================================
-   CONFIG
-========================================================= */
 
 const PORT = Number(process.env.PORT) || 5000;
 
 const MONGO_URI =
-    process.env.MONGO_URI ||
-    "mongodb://127.0.0.1:27017/national_land_system";
+process.env.MONGO_URI ||
+"mongodb://127.0.0.1:27017/national_land_system";
 
 const JWT_SECRET =
-    process.env.JWT_SECRET ||
-    "SIH_LAND_SYSTEM_SECRET_2026";
+process.env.JWT_SECRET ||
+"SIH_LAND_SYSTEM_SECRET_2026";
 
 const NODE_ENV =
-    process.env.NODE_ENV || "development";
+process.env.NODE_ENV || "development";
 
 /* =========================================================
    CORS
 ========================================================= */
 
 const allowedOrigins = [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:5174",
-];
+"http://localhost:5173",
+"http://localhost:5174",
+"http://127.0.0.1:5173",
+"http://127.0.0.1:5174",
+
+"https://sih-land-acquisition-eight.vercel.app",
+
+process.env.FRONTEND_URL,
+].filter(Boolean);
 
 const corsOptions = {
-    origin: function (origin, callback) {
-        /*
-         * Allow requests without an Origin header.
-         * Useful for Postman, server-to-server requests,
-         * direct health checks, etc.
-         */
-        if (!origin) {
-            return callback(null, true);
-        }
+origin: function (origin, callback) {
 
-        if (allowedOrigins.includes(origin)) {
-            return callback(null, true);
-        }
+if (!origin) {
+return callback(null, true);
+}
 
-        console.warn(
-            "CORS blocked origin:",
-            origin
-        );
+if (allowedOrigins.includes(origin)) {
+return callback(null, true);
+}
 
-        return callback(
-            new Error("CORS origin not allowed")
-        );
-    },
+console.warn("CORS blocked origin:", origin);
 
-    methods: [
-        "GET",
-        "POST",
-        "PUT",
-        "PATCH",
-        "DELETE",
-        "OPTIONS",
-    ],
+return callback(
+new Error("CORS origin not allowed")
+);
+},
 
-    allowedHeaders: [
-        "Content-Type",
-        "Authorization",
-    ],
+methods: [
+"GET",
+"POST",
+"PUT",
+"PATCH",
+"DELETE",
+"OPTIONS",
+],
 
-    credentials: true,
+allowedHeaders: [
+"Content-Type",
+"Authorization",
+],
+
+credentials: true,
 };
 
-/*
- * IMPORTANT:
- * CORS middleware must be registered before routes.
- */
 app.use(cors(corsOptions));
 
 app.options("*", cors(corsOptions));
@@ -103,22 +88,18 @@ app.options("*", cors(corsOptions));
 ========================================================= */
 
 app.use(
-    helmet({
-        crossOriginResourcePolicy: {
-            policy: "cross-origin",
-        },
-    })
+helmet({
+crossOriginResourcePolicy: {
+policy: "cross-origin",
+},
+})
 );
 
-/*
- * Login/API rate limiter.
- * Kept reasonably high for local development.
- */
 const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 1000,
-    standardHeaders: true,
-    legacyHeaders: false,
+windowMs: 15 * 60 * 1000,
+max: 1000,
+standardHeaders: true,
+legacyHeaders: false,
 });
 
 app.use("/api/", apiLimiter);
@@ -128,16 +109,16 @@ app.use("/api/", apiLimiter);
 ========================================================= */
 
 app.use(
-    express.json({
-        limit: "10mb",
-    })
+express.json({
+limit: "10mb",
+})
 );
 
 app.use(
-    express.urlencoded({
-        extended: true,
-        limit: "10mb",
-    })
+express.urlencoded({
+extended: true,
+limit: "10mb",
+})
 );
 
 /* =========================================================
@@ -145,19 +126,19 @@ app.use(
 ========================================================= */
 
 const uploadDirectory = path.join(
-    __dirname,
-    "uploads"
+__dirname,
+"uploads"
 );
 
 if (!fs.existsSync(uploadDirectory)) {
-    fs.mkdirSync(uploadDirectory, {
-        recursive: true,
-    });
+fs.mkdirSync(uploadDirectory, {
+recursive: true,
+});
 }
 
 app.use(
-    "/uploads",
-    express.static(uploadDirectory)
+"/uploads",
+express.static(uploadDirectory)
 );
 
 /* =========================================================
@@ -165,19 +146,19 @@ app.use(
 ========================================================= */
 
 const io = new Server(server, {
-    cors: {
-        origin: allowedOrigins,
-        methods: [
-            "GET",
-            "POST",
-        ],
-        credentials: true,
-    },
+cors: {
+origin: allowedOrigins,
+methods: [
+"GET",
+"POST",
+],
+credentials: true,
+},
 
-    transports: [
-        "websocket",
-        "polling",
-    ],
+transports: [
+"websocket",
+"polling",
+],
 });
 
 /* =========================================================
@@ -185,34 +166,38 @@ const io = new Server(server, {
 ========================================================= */
 
 io.use((socket, next) => {
-    try {
-        const token =
-            socket.handshake.auth?.token;
+try {
 
-        if (!token) {
-            return next(
-                new Error(
-                    "Authentication token required"
-                )
-            );
-        }
+const token =
+socket.handshake.auth?.token;
 
-        const decoded =
-            jwt.verify(
-                token,
-                JWT_SECRET
-            );
+if (!token) {
+return next(
+new Error(
+"Authentication token required"
+)
+);
+}
 
-        socket.user = decoded;
+const decoded =
+jwt.verify(
+token,
+JWT_SECRET
+);
 
-        next();
-    } catch (error) {
-        next(
-            new Error(
-                "Invalid socket authentication"
-            )
-        );
-    }
+socket.user = decoded;
+
+next();
+
+} catch (error) {
+
+next(
+new Error(
+"Invalid socket authentication"
+)
+);
+
+}
 });
 
 /* =========================================================
@@ -220,666 +205,689 @@ io.use((socket, next) => {
 ========================================================= */
 
 io.on(
-    "connection",
-    (socket) => {
-        console.log(
-            "Socket connected:",
-            socket.id
-        );
+"connection",
+(socket) => {
 
-        const user = socket.user;
+console.log(
+"Socket connected:",
+socket.id
+);
 
-        /*
-         * User-specific room
-         */
-        if (user?.id) {
-            socket.join(
-                `user:${user.id}`
-            );
-        }
+const user = socket.user;
 
-        /*
-         * Role-specific room
-         */
-        if (user?.role) {
-            socket.join(
-                `role:${user.role}`
-            );
-        }
+if (user?.id) {
 
-        socket.emit(
-            "connection:ready",
-            {
-                success: true,
-                message:
-                    "NLAMS real-time connection established",
-            }
-        );
+socket.join(
+`user:${user.id}`
+);
 
-        socket.on(
-            "disconnect",
-            (reason) => {
-                console.log(
-                    "Socket disconnected:",
-                    socket.id,
-                    reason
-                );
-            }
-        );
-    }
+}
+
+if (user?.role) {
+
+socket.join(
+`role:${user.role}`
+);
+
+}
+
+socket.emit(
+"connection:ready",
+{
+success: true,
+message:
+"NLAMS real-time connection established",
+}
+);
+
+socket.on(
+"disconnect",
+(reason) => {
+
+console.log(
+"Socket disconnected:",
+socket.id,
+reason
+);
+
+}
+);
+
+}
 );
 
 /* =========================================================
-   DATABASE SCHEMAS
+   USER SCHEMA
 ========================================================= */
 
-/* ---------------- USER ---------------- */
-
 const userSchema =
-    new mongoose.Schema(
-        {
-            username: {
-                type: String,
-                required: true,
-                unique: true,
-                trim: true,
-            },
+new mongoose.Schema(
+{
+username: {
+type: String,
+required: true,
+unique: true,
+trim: true,
+},
 
-            password: {
-                type: String,
-                required: true,
-            },
+password: {
+type: String,
+required: true,
+},
 
-            role: {
-                type: String,
-                required: true,
-                enum: [
-                    "ADMINISTRATOR",
-                    "LAND_OFFICER",
-                    "LEGAL_OFFICER",
-                ],
-            },
+role: {
+type: String,
+required: true,
 
-            designation: {
-                type: String,
-                default: "",
-            },
+enum: [
+"ADMINISTRATOR",
+"LAND_OFFICER",
+"LEGAL_OFFICER",
+],
+},
 
-            access: {
-                type: String,
-                default: "",
-            },
+designation: {
+type: String,
+default: "",
+},
 
-            status: {
-                type: String,
-                default: "ACTIVE",
-            },
-        },
+access: {
+type: String,
+default: "",
+},
 
-        {
-            timestamps: true,
-        }
-    );
+status: {
+type: String,
+default: "ACTIVE",
+},
+},
+
+{
+timestamps: true,
+}
+);
 
 const User =
-    mongoose.models.User ||
-    mongoose.model(
-        "User",
-        userSchema
-    );
+mongoose.models.User ||
+mongoose.model(
+"User",
+userSchema
+);
 
-/* ---------------- PROJECT ---------------- */
+/* =========================================================
+   PROJECT SCHEMA
+========================================================= */
 
 const projectSchema =
-    new mongoose.Schema(
-        {
-            projectId: {
-                type: String,
-                required: true,
-                unique: true,
-                trim: true,
-            },
+new mongoose.Schema(
+{
+projectId: {
+type: String,
+required: true,
+unique: true,
+trim: true,
+},
 
-            projectName: {
-                type: String,
-                default: "",
-            },
+projectName: {
+type: String,
+default: "",
+},
 
-            state: {
-                type: String,
-                default: "",
-            },
+state: {
+type: String,
+default: "",
+},
 
-            district: {
-                type: String,
-                default: "",
-            },
+district: {
+type: String,
+default: "",
+},
 
-            authority: {
-                type: String,
-                default: "",
-            },
+authority: {
+type: String,
+default: "",
+},
 
-            projectType: {
-                type: String,
-                default: "",
-            },
+projectType: {
+type: String,
+default: "",
+},
 
-            startDate: {
-                type: String,
-                default: "",
-            },
+startDate: {
+type: String,
+default: "",
+},
 
-            expectedCompletion: {
-                type: String,
-                default: "",
-            },
+expectedCompletion: {
+type: String,
+default: "",
+},
 
-            landRequiredAcres: {
-                type: Number,
-                default: 0,
-            },
+landRequiredAcres: {
+type: Number,
+default: 0,
+},
 
-            landAcquiredAcres: {
-                type: Number,
-                default: 0,
-            },
+landAcquiredAcres: {
+type: Number,
+default: 0,
+},
 
-            acquisitionProgressPct: {
-                type: Number,
-                default: 0,
-            },
+acquisitionProgressPct: {
+type: Number,
+default: 0,
+},
 
-            projectStatus: {
-                type: String,
-                default: "In Progress",
-            },
+projectStatus: {
+type: String,
+default: "In Progress",
+},
 
-            riskLevel: {
-                type: String,
-                default: "Medium",
-            },
+riskLevel: {
+type: String,
+default: "Medium",
+},
 
-            createdBy: {
-                type: String,
-                default: "",
-            },
-        },
+createdBy: {
+type: String,
+default: "",
+},
+},
 
-        {
-            timestamps: true,
-            strict: false,
-        }
-    );
+{
+timestamps: true,
+strict: false,
+}
+);
 
 const Project =
-    mongoose.models.Project ||
-    mongoose.model(
-        "Project",
-        projectSchema
-    );
+mongoose.models.Project ||
+mongoose.model(
+"Project",
+projectSchema
+);
 
-/* ---------------- LAND / PARCEL ---------------- */
+/* =========================================================
+   LAND / PARCEL SCHEMA
+========================================================= */
 
 const landSchema =
-    new mongoose.Schema(
-        {
-            parcelId: {
-                type: String,
-                required: true,
-                unique: true,
-            },
+new mongoose.Schema(
+{
+parcelId: {
+type: String,
+required: true,
+unique: true,
+},
 
-            projectId: {
-                type: String,
-                default: "",
-            },
+projectId: {
+type: String,
+default: "",
+},
 
-            state: {
-                type: String,
-                default: "",
-            },
+state: {
+type: String,
+default: "",
+},
 
-            district: {
-                type: String,
-                default: "",
-            },
+district: {
+type: String,
+default: "",
+},
 
-            village: {
-                type: String,
-                default: "",
-            },
+village: {
+type: String,
+default: "",
+},
 
-            landType: {
-                type: String,
-                default: "",
-            },
+landType: {
+type: String,
+default: "",
+},
 
-            areaAcres: {
-                type: Number,
-                default: 0,
-            },
+areaAcres: {
+type: Number,
+default: 0,
+},
 
-            acquisitionStatus: {
-                type: String,
-                default: "Pending",
-            },
+acquisitionStatus: {
+type: String,
+default: "Pending",
+},
 
-            litigationFlag: {
-                type: String,
-                default: "No",
-            },
+litigationFlag: {
+type: String,
+default: "No",
+},
 
-            latitude: {
-                type: Number,
-                default: null,
-            },
+latitude: {
+type: Number,
+default: null,
+},
 
-            longitude: {
-                type: Number,
-                default: null,
-            },
-        },
+longitude: {
+type: Number,
+default: null,
+},
+},
 
-        {
-            timestamps: true,
-            strict: false,
-        }
-    );
+{
+timestamps: true,
+strict: false,
+}
+);
 
 const Land =
-    mongoose.models.Land ||
-    mongoose.model(
-        "Land",
-        landSchema,
-        "landparcels"
-    );
+mongoose.models.Land ||
+mongoose.model(
+"Land",
+landSchema,
+"landparcels"
+);
 
-/* ---------------- COMPENSATION ---------------- */
+/* =========================================================
+   COMPENSATION SCHEMA
+========================================================= */
 
 const compensationSchema =
-    new mongoose.Schema(
-        {
-            compensationId: {
-                type: String,
-                required: true,
-                unique: true,
-            },
+new mongoose.Schema(
+{
+compensationId: {
+type: String,
+required: true,
+unique: true,
+},
 
-            projectId: {
-                type: String,
-                default: "",
-            },
+projectId: {
+type: String,
+default: "",
+},
 
-            parcelId: {
-                type: String,
-                default: "",
-            },
+parcelId: {
+type: String,
+default: "",
+},
 
-            ownerName: {
-                type: String,
-                default: "",
-            },
+ownerName: {
+type: String,
+default: "",
+},
 
-            awardedAmount: {
-                type: Number,
-                default: 0,
-            },
+awardedAmount: {
+type: Number,
+default: 0,
+},
 
-            paidAmount: {
-                type: Number,
-                default: 0,
-            },
+paidAmount: {
+type: Number,
+default: 0,
+},
 
-            status: {
-                type: String,
-                default: "Pending",
-            },
+status: {
+type: String,
+default: "Pending",
+},
 
-            createdBy: {
-                type: String,
-                default: "",
-            },
-        },
+createdBy: {
+type: String,
+default: "",
+},
+},
 
-        {
-            timestamps: true,
-            strict: false,
-        }
-    );
+{
+timestamps: true,
+strict: false,
+}
+);
 
 const Compensation =
-    mongoose.models.Compensation ||
-    mongoose.model(
-        "Compensation",
-        compensationSchema
-    );
+mongoose.models.Compensation ||
+mongoose.model(
+"Compensation",
+compensationSchema
+);
 
-/* ---------------- LEGAL CASE ---------------- */
+/* =========================================================
+   LEGAL CASE SCHEMA
+========================================================= */
 
 const legalCaseSchema =
-    new mongoose.Schema(
-        {
-            caseId: {
-                type: String,
-                required: true,
-                unique: true,
-            },
+new mongoose.Schema(
+{
+caseId: {
+type: String,
+required: true,
+unique: true,
+},
 
-            projectId: {
-                type: String,
-                default: "",
-            },
+projectId: {
+type: String,
+default: "",
+},
 
-            parcelId: {
-                type: String,
-                default: "",
-            },
+parcelId: {
+type: String,
+default: "",
+},
 
-            title: {
-                type: String,
-                default: "",
-            },
+title: {
+type: String,
+default: "",
+},
 
-            description: {
-                type: String,
-                default: "",
-            },
+description: {
+type: String,
+default: "",
+},
 
-            status: {
-                type: String,
-                default: "Pending",
-            },
+status: {
+type: String,
+default: "Pending",
+},
 
-            priority: {
-                type: String,
-                default: "Medium",
-            },
+priority: {
+type: String,
+default: "Medium",
+},
 
-            objectionPending: {
-                type: Boolean,
-                default: false,
-            },
+objectionPending: {
+type: Boolean,
+default: false,
+},
 
-            createdBy: {
-                type: String,
-                default: "",
-            },
-        },
+createdBy: {
+type: String,
+default: "",
+},
+},
 
-        {
-            timestamps: true,
-            strict: false,
-        }
-    );
+{
+timestamps: true,
+strict: false,
+}
+);
 
 const LegalCase =
-    mongoose.models.LegalCase ||
-    mongoose.model(
-        "LegalCase",
-        legalCaseSchema
-    );
+mongoose.models.LegalCase ||
+mongoose.model(
+"LegalCase",
+legalCaseSchema
+);
 
-/* ---------------- DOCUMENT ---------------- */
+/* =========================================================
+   DOCUMENT SCHEMA
+========================================================= */
 
 const documentSchema =
-    new mongoose.Schema(
-        {
-            documentId: {
-                type: String,
-                unique: true,
-                sparse: true,
-            },
+new mongoose.Schema(
+{
+documentId: {
+type: String,
+unique: true,
+sparse: true,
+},
 
-            name: {
-                type: String,
-                default: "",
-            },
+name: {
+type: String,
+default: "",
+},
 
-            originalName: {
-                type: String,
-                default: "",
-            },
+originalName: {
+type: String,
+default: "",
+},
 
-            fileName: {
-                type: String,
-                default: "",
-            },
+fileName: {
+type: String,
+default: "",
+},
 
-            mimeType: {
-                type: String,
-                default: "",
-            },
+mimeType: {
+type: String,
+default: "",
+},
 
-            size: {
-                type: Number,
-                default: 0,
-            },
+size: {
+type: Number,
+default: 0,
+},
 
-            url: {
-                type: String,
-                default: "",
-            },
+url: {
+type: String,
+default: "",
+},
 
-            projectId: {
-                type: String,
-                default: "",
-            },
+projectId: {
+type: String,
+default: "",
+},
 
-            parcelId: {
-                type: String,
-                default: "",
-            },
+parcelId: {
+type: String,
+default: "",
+},
 
-            uploadedBy: {
-                type: String,
-                default: "",
-            },
+uploadedBy: {
+type: String,
+default: "",
+},
 
-            uploadedByRole: {
-                type: String,
-                default: "",
-            },
+uploadedByRole: {
+type: String,
+default: "",
+},
 
-            status: {
-                type: String,
-                default: "UPLOADED",
-            },
-        },
+status: {
+type: String,
+default: "UPLOADED",
+},
+},
 
-        {
-            timestamps: true,
-            strict: false,
-        }
-    );
+{
+timestamps: true,
+strict: false,
+}
+);
 
 const Document =
-    mongoose.models.Document ||
-    mongoose.model(
-        "Document",
-        documentSchema
-    );
+mongoose.models.Document ||
+mongoose.model(
+"Document",
+documentSchema
+);
 
-/* ---------------- NOTIFICATION ---------------- */
+/* =========================================================
+   NOTIFICATION SCHEMA
+========================================================= */
 
 const notificationSchema =
-    new mongoose.Schema(
-        {
-            title: {
-                type: String,
-                required: true,
-            },
+new mongoose.Schema(
+{
+title: {
+type: String,
+required: true,
+},
 
-            message: {
-                type: String,
-                default: "",
-            },
+message: {
+type: String,
+default: "",
+},
 
-            type: {
-                type: String,
-                default: "info",
-            },
+type: {
+type: String,
+default: "info",
+},
 
-            targetRole: {
-                type: String,
-                default: "",
-            },
+targetRole: {
+type: String,
+default: "",
+},
 
-            targetUserId: {
-                type: String,
-                default: "",
-            },
+targetUserId: {
+type: String,
+default: "",
+},
 
-            read: {
-                type: Boolean,
-                default: false,
-            },
+read: {
+type: Boolean,
+default: false,
+},
 
-            createdBy: {
-                type: String,
-                default: "",
-            },
-        },
+createdBy: {
+type: String,
+default: "",
+},
+},
 
-        {
-            timestamps: true,
-        }
-    );
+{
+timestamps: true,
+}
+);
 
 const Notification =
-    mongoose.models.Notification ||
-    mongoose.model(
-        "Notification",
-        notificationSchema
-    );
+mongoose.models.Notification ||
+mongoose.model(
+"Notification",
+notificationSchema
+);
 
-/* ---------------- AUDIT ---------------- */
+/* =========================================================
+   AUDIT SCHEMA
+========================================================= */
 
 const auditSchema =
-    new mongoose.Schema(
-        {
-            action: {
-                type: String,
-                default: "",
-            },
+new mongoose.Schema(
+{
+action: {
+type: String,
+default: "",
+},
 
-            event: {
-                type: String,
-                default: "",
-            },
+event: {
+type: String,
+default: "",
+},
 
-            username: {
-                type: String,
-                default: "",
-            },
+username: {
+type: String,
+default: "",
+},
 
-            role: {
-                type: String,
-                default: "",
-            },
+role: {
+type: String,
+default: "",
+},
 
-            userId: {
-                type: String,
-                default: "",
-            },
+userId: {
+type: String,
+default: "",
+},
 
-            details: {
-                type: mongoose.Schema.Types.Mixed,
-                default: {},
-            },
+details: {
+type: mongoose.Schema.Types.Mixed,
+default: {},
+},
 
-            ip: {
-                type: String,
-                default: "",
-            },
-        },
+ip: {
+type: String,
+default: "",
+},
+},
 
-        {
-            timestamps: true,
-        }
-    );
+{
+timestamps: true,
+}
+);
 
 const Audit =
-    mongoose.models.Audit ||
-    mongoose.model(
-        "Audit",
-        auditSchema
-    );
+mongoose.models.Audit ||
+mongoose.model(
+"Audit",
+auditSchema
+);
 
 /* =========================================================
    DEFAULT USERS
 ========================================================= */
 
 async function createDefaultUsers() {
-    const users = [
-        {
-            username: "admin",
-            password: "Admin@123",
-            role: "ADMINISTRATOR",
-            designation: "Super Admin",
-            access: "Full System",
-        },
 
-        {
-            username: "land.officer",
-            password: "Land@123",
-            role: "LAND_OFFICER",
-            designation: "Government Land Officer",
-            access: "Land & Projects",
-        },
+const users = [
 
-        {
-            username: "legal.officer",
-            password: "Legal@123",
-            role: "LEGAL_OFFICER",
-            designation: "Legal Officer",
-            access: "Legal & Cases",
-        },
-    ];
+{
+username: "admin",
+password: "Admin@123",
+role: "ADMINISTRATOR",
+designation: "Super Admin",
+access: "Full System",
+},
 
-    for (const item of users) {
-        const existing =
-            await User.findOne({
-                username:
-                    item.username,
-            });
+{
+username: "land.officer",
+password: "Land@123",
+role: "LAND_OFFICER",
+designation: "Government Land Officer",
+access: "Land & Projects",
+},
 
-        if (!existing) {
-            const hashedPassword =
-                await bcrypt.hash(
-                    item.password,
-                    10
-                );
+{
+username: "legal.officer",
+password: "Legal@123",
+role: "LEGAL_OFFICER",
+designation: "Legal Officer",
+access: "Legal & Cases",
+},
 
-            await User.create({
-                username:
-                    item.username,
+];
 
-                password:
-                    hashedPassword,
+for (const item of users) {
 
-                role:
-                    item.role,
+const existing =
+await User.findOne({
+username:
+item.username,
+});
 
-                designation:
-                    item.designation,
+if (!existing) {
 
-                access:
-                    item.access,
+const hashedPassword =
+await bcrypt.hash(
+item.password,
+10
+);
 
-                status:
-                    "ACTIVE",
-            });
+await User.create({
+username:
+item.username,
 
-            console.log(
-                `Created default user: ${item.username}`
-            );
-        }
-    }
+password:
+hashedPassword,
 
-    console.log(
-        "Default users checked."
-    );
+role:
+item.role,
+
+designation:
+item.designation,
+
+access:
+item.access,
+
+status:
+"ACTIVE",
+});
+
+console.log(
+`Created default user: ${item.username}`
+);
+
+}
+
+}
+
+console.log(
+"Default users checked."
+);
+
 }
 
 /* =========================================================
@@ -887,45 +895,54 @@ async function createDefaultUsers() {
 ========================================================= */
 
 async function createAudit({
-    req,
-    action,
-    event,
-    user,
-    details = {},
+req,
+action,
+event,
+user,
+details = {},
 }) {
-    try {
-        await Audit.create({
-            action,
-            event:
-                event || action,
 
-            username:
-                user?.username ||
-                req?.user?.username ||
-                "",
+try {
 
-            role:
-                user?.role ||
-                req?.user?.role ||
-                "",
+await Audit.create({
 
-            userId:
-                user?.id ||
-                req?.user?.id ||
-                "",
+action,
 
-            details,
+event:
+event || action,
 
-            ip:
-                req?.ip ||
-                "",
-        });
-    } catch (error) {
-        console.error(
-            "Audit error:",
-            error.message
-        );
-    }
+username:
+user?.username ||
+req?.user?.username ||
+"",
+
+role:
+user?.role ||
+req?.user?.role ||
+"",
+
+userId:
+user?.id ||
+req?.user?.id ||
+"",
+
+details,
+
+ip:
+req?.ip ||
+"",
+
+});
+
+} catch (error) {
+
+console.error(
+"Audit error:",
+error.message
+);
+
+}
+
 }
 
 /* =========================================================
@@ -933,70 +950,75 @@ async function createAudit({
 ========================================================= */
 
 async function createNotification({
-    title,
-    message,
-    type = "info",
-    targetRole = "",
-    targetUserId = "",
-    createdBy = "",
+title,
+message,
+type = "info",
+targetRole = "",
+targetUserId = "",
+createdBy = "",
 }) {
-    try {
-        const notification =
-            await Notification.create({
-                title,
-                message,
-                type,
-                targetRole,
-                targetUserId,
-                createdBy,
-            });
 
-        /*
-         * Send to specific user.
-         */
-        if (targetUserId) {
-            io.to(
-                `user:${targetUserId}`
-            ).emit(
-                "notification",
-                notification
-            );
-        }
+try {
 
-        /*
-         * Send to entire role.
-         */
-        if (targetRole) {
-            io.to(
-                `role:${targetRole}`
-            ).emit(
-                "notification",
-                notification
-            );
-        }
+const notification =
+await Notification.create({
 
-        /*
-         * Broadcast general notification.
-         */
-        if (
-            !targetRole &&
-            !targetUserId
-        ) {
-            io.emit(
-                "notification",
-                notification
-            );
-        }
+title,
+message,
+type,
+targetRole,
+targetUserId,
+createdBy,
 
-        return notification;
-    } catch (error) {
-        console.error(
-            "Notification error:",
-            error.message
-        );
+});
 
-        return null;
-    }
+if (targetUserId) {
+
+io.to(
+`user:${targetUserId}`
+).emit(
+"notification",
+notification
+);
+
+}
+
+if (targetRole) {
+
+io.to(
+`role:${targetRole}`
+).emit(
+"notification",
+notification
+);
+
+}
+
+if (
+!targetRole &&
+!targetUserId
+) {
+
+io.emit(
+"notification",
+notification
+);
+
+}
+
+return notification;
+
+} catch (error) {
+
+console.error(
+"Notification error:",
+error.message
+);
+
+return null;
+
+}
+
 }
 
 /* =========================================================
@@ -1004,52 +1026,66 @@ async function createNotification({
 ========================================================= */
 
 function authenticateToken(
-    req,
-    res,
-    next
+req,
+res,
+next
 ) {
-    const authHeader =
-        req.headers.authorization;
 
-    const token =
-        authHeader &&
-        authHeader.startsWith(
-            "Bearer "
-        )
-            ? authHeader.substring(
-                  7
-              )
-            : null;
+const authHeader =
+req.headers.authorization;
 
-    if (!token) {
-        return res
-            .status(401)
-            .json({
-                success: false,
-                message:
-                    "Authentication required.",
-            });
-    }
+const token =
+authHeader &&
+authHeader.startsWith(
+"Bearer "
+)
+? authHeader.substring(
+7
+)
+: null;
 
-    try {
-        const decoded =
-            jwt.verify(
-                token,
-                JWT_SECRET
-            );
+if (!token) {
 
-        req.user = decoded;
+return res
+.status(401)
+.json({
 
-        next();
-    } catch (error) {
-        return res
-            .status(403)
-            .json({
-                success: false,
-                message:
-                    "Invalid or expired token.",
-            });
-    }
+success: false,
+
+message:
+"Authentication required.",
+
+});
+
+}
+
+try {
+
+const decoded =
+jwt.verify(
+token,
+JWT_SECRET
+);
+
+req.user = decoded;
+
+next();
+
+} catch (error) {
+
+return res
+.status(403)
+.json({
+
+success: false,
+
+message:
+"Invalid or expired token.",
+
+});
+
+}
+
 }
 
 /* =========================================================
@@ -1057,30 +1093,39 @@ function authenticateToken(
 ========================================================= */
 
 function authorizeRoles(
-    ...allowedRoles
+...allowedRoles
 ) {
-    return (
-        req,
-        res,
-        next
-    ) => {
-        if (
-            !req.user ||
-            !allowedRoles.includes(
-                req.user.role
-            )
-        ) {
-            return res
-                .status(403)
-                .json({
-                    success: false,
-                    message:
-                        "You do not have permission to access this resource.",
-                });
-        }
 
-        next();
-    };
+return (
+req,
+res,
+next
+) => {
+
+if (
+!req.user ||
+!allowedRoles.includes(
+req.user.role
+)
+) {
+
+return res
+.status(403)
+.json({
+
+success: false,
+
+message:
+"You do not have permission to access this resource.",
+
+});
+
+}
+
+next();
+
+};
+
 }
 
 /* =========================================================
@@ -1088,73 +1133,79 @@ function authorizeRoles(
 ========================================================= */
 
 function normalizeProject(
-    project
+project
 ) {
-    if (!project) {
-        return project;
-    }
 
-    const landRequired =
-        Number(
-            project.landRequiredAcres ||
-                0
-        );
+if (!project) {
+return project;
+}
 
-    const landAcquired =
-        Number(
-            project.landAcquiredAcres ||
-                0
-        );
+const landRequired =
+Number(
+project.landRequiredAcres ||
+0
+);
 
-    let progress =
-        Number(
-            project.acquisitionProgressPct
-        );
+const landAcquired =
+Number(
+project.landAcquiredAcres ||
+0
+);
 
-    if (
-        !Number.isFinite(
-            progress
-        )
-    ) {
-        progress =
-            landRequired > 0
-                ? (landAcquired /
-                      landRequired) *
-                  100
-                : 0;
-    }
+let progress =
+Number(
+project.acquisitionProgressPct
+);
 
-    progress = Math.max(
-        0,
-        Math.min(
-            100,
-            progress
-        )
-    );
+if (
+!Number.isFinite(
+progress
+)
+) {
 
-    return {
-        ...project,
+progress =
+landRequired > 0
+? (landAcquired /
+landRequired) *
+100
+: 0;
 
-        id:
-            project._id?.toString?.() ||
-            project.id,
+}
 
-        landRequiredAcres:
-            landRequired,
+progress = Math.max(
+0,
+Math.min(
+100,
+progress
+)
+);
 
-        landAcquiredAcres:
-            landAcquired,
+return {
 
-        acquisitionProgressPct:
-            Number(
-                progress.toFixed(2)
-            ),
+...project,
 
-        projectStatus:
-            project.projectStatus ||
-            project.status ||
-            "In Progress",
-    };
+id:
+project._id?.toString?.() ||
+project.id,
+
+landRequiredAcres:
+landRequired,
+
+landAcquiredAcres:
+landAcquired,
+
+acquisitionProgressPct:
+Number(
+progress.toFixed(2)
+),
+
+projectStatus:
+project.projectStatus ||
+project.status ||
+"In Progress",
+
+};
+
 }
 
 /* =========================================================
@@ -1162,21 +1213,29 @@ function normalizeProject(
 ========================================================= */
 
 app.get(
-    "/api/health",
-    (req, res) => {
-        res.json({
-            success: true,
-            service: "NLAMS",
-            status: "online",
-            database:
-                mongoose.connection.readyState ===
-                1
-                    ? "connected"
-                    : "disconnected",
-            time:
-                new Date().toISOString(),
-        });
-    }
+"/api/health",
+(req, res) => {
+
+res.json({
+
+success: true,
+
+service: "NLAMS",
+
+status: "online",
+
+database:
+mongoose.connection.readyState ===
+1
+? "connected"
+: "disconnected",
+
+time:
+new Date().toISOString(),
+
+});
+
+}
 );
 
 /* =========================================================
@@ -1184,184 +1243,231 @@ app.get(
 ========================================================= */
 
 app.get(
-    "/",
-    (req, res) => {
-        res.json({
-            success: true,
+"/",
+(req, res) => {
 
-            message:
-                "SIH Land Management Backend Running",
+res.json({
 
-            database:
-                mongoose.connection.readyState ===
-                1
-                    ? "connected"
-                    : "disconnected",
+success: true,
 
-            environment:
-                NODE_ENV,
-        });
-    }
+message:
+"SIH Land Management Backend Running",
+
+database:
+mongoose.connection.readyState ===
+1
+? "connected"
+: "disconnected",
+
+environment:
+NODE_ENV,
+
+});
+
+}
 );
 
 /* =========================================================
-   AUTH LOGIN
+   LOGIN
 ========================================================= */
 
 app.post(
-    "/api/auth/login",
-    async (req, res) => {
-        try {
-            const {
-                username,
-                password,
-            } = req.body;
+"/api/auth/login",
+async (req, res) => {
 
-            if (
-                !username ||
-                !password
-            ) {
-                return res
-                    .status(400)
-                    .json({
-                        success: false,
-                        message:
-                            "Username and password are required.",
-                    });
-            }
+try {
 
-            const user =
-                await User.findOne({
-                    username:
-                        String(
-                            username
-                        ).trim(),
-                });
+const {
+username,
+password,
+} = req.body;
 
-            if (!user) {
-                return res
-                    .status(401)
-                    .json({
-                        success: false,
-                        message:
-                            "Invalid username or password.",
-                    });
-            }
+if (
+!username ||
+!password
+) {
 
-            if (
-                user.status !==
-                "ACTIVE"
-            ) {
-                return res
-                    .status(403)
-                    .json({
-                        success: false,
-                        message:
-                            "Account is inactive.",
-                    });
-            }
+return res
+.status(400)
+.json({
 
-            const passwordMatch =
-                await bcrypt.compare(
-                    password,
-                    user.password
-                );
+success: false,
 
-            if (!passwordMatch) {
-                return res
-                    .status(401)
-                    .json({
-                        success: false,
-                        message:
-                            "Invalid username or password.",
-                    });
-            }
+message:
+"Username and password are required.",
 
-            const token =
-                jwt.sign(
-                    {
-                        id:
-                            user._id.toString(),
+});
 
-                        username:
-                            user.username,
+}
 
-                        role:
-                            user.role,
-                    },
+const user =
+await User.findOne({
 
-                    JWT_SECRET,
+username:
+String(
+username
+).trim(),
 
-                    {
-                        expiresIn:
-                            "8h",
-                    }
-                );
+});
 
-            await createAudit({
-                req,
+if (!user) {
 
-                action:
-                    "LOGIN",
+return res
+.status(401)
+.json({
 
-                event:
-                    "USER_LOGIN",
+success: false,
 
-                user: {
-                    id:
-                        user._id.toString(),
+message:
+"Invalid username or password.",
 
-                    username:
-                        user.username,
+});
 
-                    role:
-                        user.role,
-                },
-            });
+}
 
-            res.json({
-                success: true,
+if (
+user.status !==
+"ACTIVE"
+) {
 
-                message:
-                    "Login successful.",
+return res
+.status(403)
+.json({
 
-                token,
+success: false,
 
-                user: {
-                    id:
-                        user._id.toString(),
+message:
+"Account is inactive.",
 
-                    username:
-                        user.username,
+});
 
-                    role:
-                        user.role,
+}
 
-                    designation:
-                        user.designation,
+const passwordMatch =
+await bcrypt.compare(
+password,
+user.password
+);
 
-                    access:
-                        user.access,
+if (!passwordMatch) {
 
-                    status:
-                        user.status,
-                },
-            });
-        } catch (error) {
-            console.error(
-                "Login error:",
-                error
-            );
+return res
+.status(401)
+.json({
 
-            res
-                .status(500)
-                .json({
-                    success: false,
-                    message:
-                        "Login failed.",
-                });
-        }
-    }
+success: false,
+
+message:
+"Invalid username or password.",
+
+});
+
+}
+
+const token =
+jwt.sign(
+
+{
+
+id:
+user._id.toString(),
+
+username:
+user.username,
+
+role:
+user.role,
+
+},
+
+JWT_SECRET,
+
+{
+expiresIn:
+"8h",
+}
+
+);
+
+await createAudit({
+
+req,
+
+action:
+"LOGIN",
+
+event:
+"USER_LOGIN",
+
+user: {
+
+id:
+user._id.toString(),
+
+username:
+user.username,
+
+role:
+user.role,
+
+},
+
+});
+
+res.json({
+
+success: true,
+
+message:
+"Login successful.",
+
+token,
+
+user: {
+
+id:
+user._id.toString(),
+
+username:
+user.username,
+
+role:
+user.role,
+
+designation:
+user.designation,
+
+access:
+user.access,
+
+status:
+user.status,
+
+},
+
+});
+
+} catch (error) {
+
+console.error(
+"Login error:",
+error
+);
+
+res
+.status(500)
+.json({
+
+success: false,
+
+message:
+"Login failed.",
+
+});
+
+}
+
+}
 );
 
 /* =========================================================
@@ -1369,63 +1475,81 @@ app.post(
 ========================================================= */
 
 app.get(
-    "/api/auth/me",
-    authenticateToken,
-    async (
-        req,
-        res
-    ) => {
-        try {
-            const user =
-                await User.findById(
-                    req.user.id
-                ).select(
-                    "-password"
-                );
+"/api/auth/me",
+authenticateToken,
+async (
+req,
+res
+) => {
 
-            if (!user) {
-                return res
-                    .status(404)
-                    .json({
-                        success: false,
-                        message:
-                            "User not found.",
-                    });
-            }
+try {
 
-            res.json({
-                success: true,
+const user =
+await User.findById(
+req.user.id
+).select(
+"-password"
+);
 
-                user: {
-                    id:
-                        user._id.toString(),
+if (!user) {
 
-                    username:
-                        user.username,
+return res
+.status(404)
+.json({
 
-                    role:
-                        user.role,
+success: false,
 
-                    designation:
-                        user.designation,
+message:
+"User not found.",
 
-                    access:
-                        user.access,
+});
 
-                    status:
-                        user.status,
-                },
-            });
-        } catch (error) {
-            res
-                .status(500)
-                .json({
-                    success: false,
-                    message:
-                        "Unable to validate session.",
-                });
-        }
-    }
+}
+
+res.json({
+
+success: true,
+
+user: {
+
+id:
+user._id.toString(),
+
+username:
+user.username,
+
+role:
+user.role,
+
+designation:
+user.designation,
+
+access:
+user.access,
+
+status:
+user.status,
+
+},
+
+});
+
+} catch (error) {
+
+res
+.status(500)
+.json({
+
+success: false,
+
+message:
+"Unable to validate session.",
+
+});
+
+}
+
+}
 );
 
 /* =========================================================
@@ -1433,245 +1557,272 @@ app.get(
 ========================================================= */
 
 app.get(
-    "/api/dashboard",
-    authenticateToken,
-    async (
-        req,
-        res
-    ) => {
-        try {
-            const [
-                projects,
-                parcels,
-                cases,
-                compensation,
-            ] =
-                await Promise.all([
-                    Project.find()
-                        .lean(),
+"/api/dashboard",
+authenticateToken,
+async (
+req,
+res
+) => {
 
-                    Land.find()
-                        .lean(),
+try {
 
-                    LegalCase.find()
-                        .lean(),
+const [
+projects,
+parcels,
+cases,
+compensation,
+] =
+await Promise.all([
 
-                    Compensation.find()
-                        .lean(),
-                ]);
+Project.find()
+.lean(),
 
-            const totalLandRequired =
-                projects.reduce(
-                    (
-                        sum,
-                        item
-                    ) =>
-                        sum +
-                        Number(
-                            item.landRequiredAcres ||
-                                0
-                        ),
-                    0
-                );
+Land.find()
+.lean(),
 
-            const totalLandAcquired =
-                projects.reduce(
-                    (
-                        sum,
-                        item
-                    ) =>
-                        sum +
-                        Number(
-                            item.landAcquiredAcres ||
-                                0
-                        ),
-                    0
-                );
+LegalCase.find()
+.lean(),
 
-            const acquisitionPercentage =
-                totalLandRequired >
-                0
-                    ? (totalLandAcquired /
-                          totalLandRequired) *
-                      100
-                    : 0;
+Compensation.find()
+.lean(),
 
-            const awarded =
-                compensation.reduce(
-                    (
-                        sum,
-                        item
-                    ) =>
-                        sum +
-                        Number(
-                            item.awardedAmount ||
-                                0
-                        ),
-                    0
-                );
+]);
 
-            const paid =
-                compensation.reduce(
-                    (
-                        sum,
-                        item
-                    ) =>
-                        sum +
-                        Number(
-                            item.paidAmount ||
-                                0
-                        ),
-                    0
-                );
+const totalLandRequired =
+projects.reduce(
+(
+sum,
+item
+) =>
+sum +
+Number(
+item.landRequiredAcres ||
+0
+),
+0
+);
 
-            const pending =
-                Math.max(
-                    awarded -
-                        paid,
-                    0
-                );
+const totalLandAcquired =
+projects.reduce(
+(
+sum,
+item
+) =>
+sum +
+Number(
+item.landAcquiredAcres ||
+0
+),
+0
+);
 
-            const pendingObjections =
-                cases.filter(
-                    (item) =>
-                        item.objectionPending ===
-                            true ||
-                        item.status ===
-                            "Pending"
-                ).length;
+const acquisitionPercentage =
+totalLandRequired >
+0
+? (totalLandAcquired /
+totalLandRequired) *
+100
+: 0;
 
-            const statusMap =
-                {};
+const awarded =
+compensation.reduce(
+(
+sum,
+item
+) =>
+sum +
+Number(
+item.awardedAmount ||
+0
+),
+0
+);
 
-            for (const project of projects) {
-                const status =
-                    project.projectStatus ||
-                    "In Progress";
+const paid =
+compensation.reduce(
+(
+sum,
+item
+) =>
+sum +
+Number(
+item.paidAmount ||
+0
+),
+0
+);
 
-                statusMap[
-                    status
-                ] =
-                    (statusMap[
-                        status
-                    ] || 0) + 1;
-            }
+const pending =
+Math.max(
+awarded -
+paid,
+0
+);
 
-            const projectStats =
-                Object.entries(
-                    statusMap
-                ).map(
-                    ([
-                        status,
-                        count,
-                    ]) => ({
-                        status,
-                        count,
-                    })
-                );
+const pendingObjections =
+cases.filter(
+(item) =>
+item.objectionPending ===
+true ||
+item.status ===
+"Pending"
+).length;
 
-            const criticalProjects =
-                projects.filter(
-                    (project) =>
-                        project.riskLevel ===
-                        "Critical"
-                ).length;
+const statusMap =
+{};
 
-            const highRiskProjects =
-                projects.filter(
-                    (project) =>
-                        project.riskLevel ===
-                        "High"
-                ).length;
+for (const project of projects) {
 
-            const riskIndex =
-                Math.min(
-                    100,
+const status =
+project.projectStatus ||
+"In Progress";
 
-                    Math.round(
-                        pendingObjections *
-                            10 +
-                            criticalProjects *
-                                20 +
-                            highRiskProjects *
-                                10
-                    )
-                );
+statusMap[
+status
+] =
+(statusMap[
+status
+] || 0) + 1;
 
-            res.json({
-                success: true,
+}
 
-                totals: {
-                    projects:
-                        projects.length,
+const projectStats =
+Object.entries(
+statusMap
+).map(
+([
+status,
+count,
+]) => ({
 
-                    parcels:
-                        parcels.length,
+status,
+count,
 
-                    cases:
-                        cases.length,
+})
+);
 
-                    landRequired:
-                        totalLandRequired,
+const criticalProjects =
+projects.filter(
+(project) =>
+project.riskLevel ===
+"Critical"
+).length;
 
-                    landAcquired:
-                        totalLandAcquired,
+const highRiskProjects =
+projects.filter(
+(project) =>
+project.riskLevel ===
+"High"
+).length;
 
-                    acquisitionPercentage:
-                        Number(
-                            acquisitionPercentage.toFixed(
-                                2
-                            )
-                        ),
+const riskIndex =
+Math.min(
+100,
 
-                    awarded,
+Math.round(
 
-                    paid,
+pendingObjections *
+10 +
 
-                    pending,
+criticalProjects *
+20 +
 
-                    pendingObjections,
-                },
+highRiskProjects *
+10
 
-                projectStats,
+)
 
-                risk: {
-                    index:
-                        riskIndex,
+);
 
-                    legalRisk:
-                        Math.min(
-                            100,
-                            pendingObjections *
-                                25
-                        ),
+res.json({
 
-                    landRecordRisk:
-                        43,
+success: true,
 
-                    compensationRisk:
-                        56,
+totals: {
 
-                    delayProbability:
-                        74,
-                },
-            });
-        } catch (error) {
-            console.error(
-                "Dashboard error:",
-                error
-            );
+projects:
+projects.length,
 
-            res
-                .status(500)
-                .json({
-                    success: false,
-                    message:
-                        "Error loading dashboard.",
-                    error:
-                        error.message,
-                });
-        }
-    }
+parcels:
+parcels.length,
+
+cases:
+cases.length,
+
+landRequired:
+totalLandRequired,
+
+landAcquired:
+totalLandAcquired,
+
+acquisitionPercentage:
+Number(
+acquisitionPercentage.toFixed(
+2
+)
+),
+
+awarded,
+
+paid,
+
+pending,
+
+pendingObjections,
+
+},
+
+projectStats,
+
+risk: {
+
+index:
+riskIndex,
+
+legalRisk:
+Math.min(
+100,
+pendingObjections *
+25
+),
+
+landRecordRisk:
+43,
+
+compensationRisk:
+56,
+
+delayProbability:
+74,
+
+},
+
+});
+
+} catch (error) {
+
+console.error(
+"Dashboard error:",
+error
+);
+
+res
+.status(500)
+.json({
+
+success: false,
+
+message:
+"Error loading dashboard.",
+
+error:
+error.message,
+
+});
+
+}
+
+}
 );
 
 /* =========================================================
@@ -1679,475 +1830,582 @@ app.get(
 ========================================================= */
 
 app.get(
-    "/api/projects",
-    authenticateToken,
-    async (
-        req,
-        res
-    ) => {
-        try {
-            const requestedLimit =
-                Number(
-                    req.query.limit
-                );
+"/api/projects",
+authenticateToken,
+async (
+req,
+res
+) => {
 
-            const limit =
-                requestedLimit >
-                0
-                    ? Math.min(
-                          requestedLimit,
-                          1000
-                      )
-                    : 500;
+try {
 
-            const rawProjects =
-                await Project.find()
-                    .sort({
-                        createdAt:
-                            -1,
-                    })
-                    .limit(
-                        limit
-                    )
-                    .lean();
+const requestedLimit =
+Number(
+req.query.limit
+);
 
-            const projects =
-                rawProjects.map(
-                    normalizeProject
-                );
+const limit =
+requestedLimit >
+0
+? Math.min(
+requestedLimit,
+1000
+)
+: 500;
 
-            res.json({
-                success: true,
+const rawProjects =
+await Project.find()
+.sort({
+createdAt:
+-1,
+})
+.limit(
+limit
+)
+.lean();
 
-                count:
-                    projects.length,
+const projects =
+rawProjects.map(
+normalizeProject
+);
 
-                projects,
-            });
-        } catch (error) {
-            console.error(
-                "Projects error:",
-                error
-            );
+res.json({
 
-            res
-                .status(500)
-                .json({
-                    success: false,
-                    message:
-                        "Error fetching projects.",
-                    error:
-                        error.message,
-                });
-        }
-    }
+success: true,
+
+count:
+projects.length,
+
+projects,
+
+});
+
+} catch (error) {
+
+console.error(
+"Projects error:",
+error
+);
+
+res
+.status(500)
+.json({
+
+success: false,
+
+message:
+"Error fetching projects.",
+
+error:
+error.message,
+
+});
+
+}
+
+}
 );
 
 app.post(
-    "/api/projects",
-    authenticateToken,
-    authorizeRoles(
-        "ADMINISTRATOR",
-        "LAND_OFFICER"
-    ),
-    async (
-        req,
-        res
-    ) => {
-        try {
-            const project =
-                await Project.create({
-                    ...req.body,
+"/api/projects",
+authenticateToken,
+authorizeRoles(
+"ADMINISTRATOR",
+"LAND_OFFICER"
+),
+async (
+req,
+res
+) => {
 
-                    createdBy:
-                        req.user.id,
-                });
+try {
 
-            const normalized =
-                normalizeProject(
-                    project.toObject()
-                );
+const project =
+await Project.create({
 
-            await createAudit({
-                req,
+...req.body,
 
-                action:
-                    "CREATE_PROJECT",
+createdBy:
+req.user.id,
 
-                event:
-                    "PROJECT_CREATED",
+});
 
-                details: {
-                    projectId:
-                        normalized.projectId,
-                },
-            });
+const normalized =
+normalizeProject(
+project.toObject()
+);
 
-            await createNotification({
-                title:
-                    "New Project Created",
+await createAudit({
 
-                message:
-                    `${normalized.projectName || normalized.projectId} was added to NLAMS.`,
+req,
 
-                type:
-                    "success",
+action:
+"CREATE_PROJECT",
 
-                targetRole:
-                    "LAND_OFFICER",
+event:
+"PROJECT_CREATED",
 
-                createdBy:
-                    req.user.username,
-            });
+details: {
 
-            io.emit(
-                "workflow:update",
-                {
-                    message:
-                        "A new land acquisition project was created.",
-                    project:
-                        normalized,
-                }
-            );
+projectId:
+normalized.projectId,
 
-            res.status(201).json({
-                success: true,
+},
 
-                message:
-                    "Project created successfully.",
+});
 
-                project:
-                    normalized,
-            });
-        } catch (error) {
-            console.error(
-                "Create project error:",
-                error
-            );
+await createNotification({
 
-            res
-                .status(
-                    error.code ===
-                        11000
-                        ? 409
-                        : 500
-                )
-                .json({
-                    success: false,
+title:
+"New Project Created",
 
-                    message:
-                        error.code ===
-                        11000
-                            ? "Project ID already exists."
-                            : error.message,
-                });
-        }
-    }
+message:
+`${normalized.projectName || normalized.projectId} was added to NLAMS.`,
+
+type:
+"success",
+
+targetRole:
+"LAND_OFFICER",
+
+createdBy:
+req.user.username,
+
+});
+
+io.emit(
+"workflow:update",
+{
+
+message:
+"A new land acquisition project was created.",
+
+project:
+normalized,
+
+}
+);
+
+res.status(201).json({
+
+success: true,
+
+message:
+"Project created successfully.",
+
+project:
+normalized,
+
+});
+
+} catch (error) {
+
+console.error(
+"Create project error:",
+error
+);
+
+res
+.status(
+error.code ===
+11000
+? 409
+: 500
+)
+.json({
+
+success: false,
+
+message:
+error.code ===
+11000
+? "Project ID already exists."
+: error.message,
+
+});
+
+}
+
+}
 );
 
 app.put(
-    "/api/projects/:id",
-    authenticateToken,
-    authorizeRoles(
-        "ADMINISTRATOR",
-        "LAND_OFFICER"
-    ),
-    async (
-        req,
-        res
-    ) => {
-        try {
-            const project =
-                await Project.findByIdAndUpdate(
-                    req.params.id,
-                    req.body,
-                    {
-                        new: true,
-                        runValidators:
-                            true,
-                    }
-                ).lean();
+"/api/projects/:id",
+authenticateToken,
+authorizeRoles(
+"ADMINISTRATOR",
+"LAND_OFFICER"
+),
+async (
+req,
+res
+) => {
 
-            if (!project) {
-                return res
-                    .status(404)
-                    .json({
-                        success: false,
-                        message:
-                            "Project not found.",
-                    });
-            }
+try {
 
-            const normalized =
-                normalizeProject(
-                    project
-                );
+const project =
+await Project.findByIdAndUpdate(
+req.params.id,
+req.body,
+{
+new: true,
+runValidators:
+true,
+}
+).lean();
 
-            await createAudit({
-                req,
+if (!project) {
 
-                action:
-                    "UPDATE_PROJECT",
+return res
+.status(404)
+.json({
 
-                event:
-                    "PROJECT_UPDATED",
+success: false,
 
-                details: {
-                    projectId:
-                        normalized.projectId,
-                },
-            });
+message:
+"Project not found.",
 
-            io.emit(
-                "workflow:update",
-                {
-                    message:
-                        `${normalized.projectName || normalized.projectId} was updated.`,
+});
 
-                    project:
-                        normalized,
-                }
-            );
+}
 
-            res.json({
-                success: true,
+const normalized =
+normalizeProject(
+project
+);
 
-                project:
-                    normalized,
-            });
-        } catch (error) {
-            console.error(
-                "Update project error:",
-                error
-            );
+await createAudit({
 
-            res
-                .status(500)
-                .json({
-                    success: false,
-                    message:
-                        error.message,
-                });
-        }
-    }
+req,
+
+action:
+"UPDATE_PROJECT",
+
+event:
+"PROJECT_UPDATED",
+
+details: {
+
+projectId:
+normalized.projectId,
+
+},
+
+});
+
+io.emit(
+"workflow:update",
+{
+
+message:
+`${normalized.projectName || normalized.projectId} was updated.`,
+
+project:
+normalized,
+
+}
+);
+
+res.json({
+
+success: true,
+
+project:
+normalized,
+
+});
+
+} catch (error) {
+
+console.error(
+"Update project error:",
+error
+);
+
+res
+.status(500)
+.json({
+
+success: false,
+
+message:
+error.message,
+
+});
+
+}
+
+}
 );
 
 /* =========================================================
-   LAND / PARCELS
+   LAND
 ========================================================= */
 
 app.get(
-    "/api/land",
-    authenticateToken,
-    async (
-        req,
-        res
-    ) => {
-        try {
-            const requestedLimit =
-                Number(
-                    req.query.limit
-                );
+"/api/land",
+authenticateToken,
+async (
+req,
+res
+) => {
 
-            const limit =
-                requestedLimit >
-                0
-                    ? Math.min(
-                          requestedLimit,
-                          2000
-                      )
-                    : 1000;
+try {
 
-            const land =
-                await Land.find()
-                    .sort({
-                        createdAt:
-                            -1,
-                    })
-                    .limit(
-                        limit
-                    )
-                    .lean();
+const requestedLimit =
+Number(
+req.query.limit
+);
 
-            res.json({
-                success: true,
+const limit =
+requestedLimit >
+0
+? Math.min(
+requestedLimit,
+2000
+)
+: 1000;
 
-                count:
-                    land.length,
+const land =
+await Land.find()
+.sort({
+createdAt:
+-1,
+})
+.limit(
+limit
+)
+.lean();
 
-                land,
+res.json({
 
-                parcels:
-                    land,
-            });
-        } catch (error) {
-            console.error(
-                "Land error:",
-                error
-            );
+success: true,
 
-            res
-                .status(500)
-                .json({
-                    success: false,
-                    message:
-                        "Error fetching land.",
-                });
-        }
-    }
+count:
+land.length,
+
+land,
+
+parcels:
+land,
+
+});
+
+} catch (error) {
+
+console.error(
+"Land error:",
+error
+);
+
+res
+.status(500)
+.json({
+
+success: false,
+
+message:
+"Error fetching land.",
+
+});
+
+}
+
+}
 );
 
 app.post(
-    "/api/land",
-    authenticateToken,
-    authorizeRoles(
-        "ADMINISTRATOR",
-        "LAND_OFFICER"
-    ),
-    async (
-        req,
-        res
-    ) => {
-        try {
-            const parcel =
-                await Land.create(
-                    req.body
-                );
+"/api/land",
+authenticateToken,
+authorizeRoles(
+"ADMINISTRATOR",
+"LAND_OFFICER"
+),
+async (
+req,
+res
+) => {
 
-            await createAudit({
-                req,
+try {
 
-                action:
-                    "CREATE_PARCEL",
+const parcel =
+await Land.create(
+req.body
+);
 
-                event:
-                    "LAND_PARCEL_CREATED",
+await createAudit({
 
-                details: {
-                    parcelId:
-                        parcel.parcelId,
-                },
-            });
+req,
 
-            io.emit(
-                "workflow:update",
-                {
-                    message:
-                        `Land parcel ${parcel.parcelId} was created.`,
-                    parcel,
-                }
-            );
+action:
+"CREATE_PARCEL",
 
-            res.status(201).json({
-                success: true,
+event:
+"LAND_PARCEL_CREATED",
 
-                message:
-                    "Land parcel created successfully.",
+details: {
 
-                parcel,
-            });
-        } catch (error) {
-            console.error(
-                "Create land error:",
-                error
-            );
+parcelId:
+parcel.parcelId,
 
-            res
-                .status(
-                    error.code ===
-                        11000
-                        ? 409
-                        : 500
-                )
-                .json({
-                    success: false,
+},
 
-                    message:
-                        error.code ===
-                        11000
-                            ? "Parcel ID already exists."
-                            : error.message,
-                });
-        }
-    }
+});
+
+io.emit(
+"workflow:update",
+{
+
+message:
+`Land parcel ${parcel.parcelId} was created.`,
+
+parcel,
+
+}
+);
+
+res.status(201).json({
+
+success: true,
+
+message:
+"Land parcel created successfully.",
+
+parcel,
+
+});
+
+} catch (error) {
+
+console.error(
+"Create land error:",
+error
+);
+
+res
+.status(
+error.code ===
+11000
+? 409
+: 500
+)
+.json({
+
+success: false,
+
+message:
+error.code ===
+11000
+? "Parcel ID already exists."
+: error.message,
+
+});
+
+}
+
+}
 );
 
 app.put(
-    "/api/land/:id",
-    authenticateToken,
-    authorizeRoles(
-        "ADMINISTRATOR",
-        "LAND_OFFICER"
-    ),
-    async (
-        req,
-        res
-    ) => {
-        try {
-            const parcel =
-                await Land.findByIdAndUpdate(
-                    req.params.id,
-                    req.body,
-                    {
-                        new: true,
-                        runValidators:
-                            true,
-                    }
-                ).lean();
+"/api/land/:id",
+authenticateToken,
+authorizeRoles(
+"ADMINISTRATOR",
+"LAND_OFFICER"
+),
+async (
+req,
+res
+) => {
 
-            if (!parcel) {
-                return res
-                    .status(404)
-                    .json({
-                        success: false,
-                        message:
-                            "Parcel not found.",
-                    });
-            }
+try {
 
-            await createAudit({
-                req,
+const parcel =
+await Land.findByIdAndUpdate(
+req.params.id,
+req.body,
+{
+new: true,
+runValidators:
+true,
+}
+).lean();
 
-                action:
-                    "UPDATE_PARCEL",
+if (!parcel) {
 
-                event:
-                    "LAND_PARCEL_UPDATED",
+return res
+.status(404)
+.json({
 
-                details: {
-                    parcelId:
-                        parcel.parcelId,
-                },
-            });
+success: false,
 
-            io.emit(
-                "workflow:update",
-                {
-                    message:
-                        `Land parcel ${parcel.parcelId} was updated.`,
-                    parcel,
-                }
-            );
+message:
+"Parcel not found.",
 
-            res.json({
-                success: true,
-                parcel,
-            });
-        } catch (error) {
-            console.error(
-                "Update land error:",
-                error
-            );
+});
 
-            res
-                .status(500)
-                .json({
-                    success: false,
-                    message:
-                        error.message,
-                });
-        }
-    }
+}
+
+await createAudit({
+
+req,
+
+action:
+"UPDATE_PARCEL",
+
+event:
+"LAND_PARCEL_UPDATED",
+
+details: {
+
+parcelId:
+parcel.parcelId,
+
+},
+
+});
+
+io.emit(
+"workflow:update",
+{
+
+message:
+`Land parcel ${parcel.parcelId} was updated.`,
+
+parcel,
+
+}
+);
+
+res.json({
+
+success: true,
+
+parcel,
+
+});
+
+} catch (error) {
+
+console.error(
+"Update land error:",
+error
+);
+
+res
+.status(500)
+.json({
+
+success: false,
+
+message:
+error.message,
+
+});
+
+}
+
+}
 );
 
 /* =========================================================
@@ -2155,191 +2413,222 @@ app.put(
 ========================================================= */
 
 app.get(
-    "/api/compensation",
-    authenticateToken,
-    async (
-        req,
-        res
-    ) => {
-        try {
-            const requestedLimit =
-                Number(
-                    req.query.limit
-                );
+"/api/compensation",
+authenticateToken,
+async (
+req,
+res
+) => {
 
-            const limit =
-                requestedLimit >
-                0
-                    ? Math.min(
-                          requestedLimit,
-                          1000
-                      )
-                    : 500;
+try {
 
-            const compensation =
-                await Compensation.find()
-                    .sort({
-                        createdAt:
-                            -1,
-                    })
-                    .limit(
-                        limit
-                    )
-                    .lean();
+const requestedLimit =
+Number(
+req.query.limit
+);
 
-            const awarded =
-                compensation.reduce(
-                    (
-                        sum,
-                        item
-                    ) =>
-                        sum +
-                        Number(
-                            item.awardedAmount ||
-                                0
-                        ),
-                    0
-                );
+const limit =
+requestedLimit >
+0
+? Math.min(
+requestedLimit,
+1000
+)
+: 500;
 
-            const paid =
-                compensation.reduce(
-                    (
-                        sum,
-                        item
-                    ) =>
-                        sum +
-                        Number(
-                            item.paidAmount ||
-                                0
-                        ),
-                    0
-                );
+const compensation =
+await Compensation.find()
+.sort({
+createdAt:
+-1,
+})
+.limit(
+limit
+)
+.lean();
 
-            res.json({
-                success: true,
+const awarded =
+compensation.reduce(
+(
+sum,
+item
+) =>
+sum +
+Number(
+item.awardedAmount ||
+0
+),
+0
+);
 
-                count:
-                    compensation.length,
+const paid =
+compensation.reduce(
+(
+sum,
+item
+) =>
+sum +
+Number(
+item.paidAmount ||
+0
+),
+0
+);
 
-                compensation,
+res.json({
 
-                payments:
-                    compensation,
+success: true,
 
-                totals: {
-                    awarded,
+count:
+compensation.length,
 
-                    paid,
+compensation,
 
-                    pending:
-                        Math.max(
-                            awarded -
-                                paid,
-                            0
-                        ),
-                },
-            });
-        } catch (error) {
-            console.error(
-                "Compensation error:",
-                error
-            );
+payments:
+compensation,
 
-            res
-                .status(500)
-                .json({
-                    success: false,
-                    message:
-                        "Error fetching compensation.",
-                });
-        }
-    }
+totals: {
+
+awarded,
+
+paid,
+
+pending:
+Math.max(
+awarded -
+paid,
+0
+),
+
+},
+
+});
+
+} catch (error) {
+
+console.error(
+"Compensation error:",
+error
+);
+
+res
+.status(500)
+.json({
+
+success: false,
+
+message:
+"Error fetching compensation.",
+
+});
+
+}
+
+}
 );
 
 app.post(
-    "/api/compensation",
-    authenticateToken,
-    authorizeRoles(
-        "ADMINISTRATOR",
-        "LAND_OFFICER"
-    ),
-    async (
-        req,
-        res
-    ) => {
-        try {
-            const item =
-                await Compensation.create(
-                    {
-                        ...req.body,
+"/api/compensation",
+authenticateToken,
+authorizeRoles(
+"ADMINISTRATOR",
+"LAND_OFFICER"
+),
+async (
+req,
+res
+) => {
 
-                        createdBy:
-                            req.user.id,
-                    }
-                );
+try {
 
-            await createAudit({
-                req,
+const item =
+await Compensation.create(
+{
 
-                action:
-                    "CREATE_COMPENSATION",
+...req.body,
 
-                event:
-                    "COMPENSATION_CREATED",
+createdBy:
+req.user.id,
 
-                details: {
-                    compensationId:
-                        item.compensationId,
-                },
-            });
+}
+);
 
-            await createNotification({
-                title:
-                    "Compensation Updated",
+await createAudit({
 
-                message:
-                    `Compensation ${item.compensationId} was created.`,
+req,
 
-                type:
-                    "info",
+action:
+"CREATE_COMPENSATION",
 
-                targetRole:
-                    "LAND_OFFICER",
+event:
+"COMPENSATION_CREATED",
 
-                createdBy:
-                    req.user.username,
-            });
+details: {
 
-            res.status(201).json({
-                success: true,
+compensationId:
+item.compensationId,
 
-                compensation:
-                    item,
-            });
-        } catch (error) {
-            console.error(
-                "Create compensation error:",
-                error
-            );
+},
 
-            res
-                .status(
-                    error.code ===
-                        11000
-                        ? 409
-                        : 500
-                )
-                .json({
-                    success: false,
+});
 
-                    message:
-                        error.code ===
-                        11000
-                            ? "Compensation ID already exists."
-                            : error.message,
-                });
-        }
-    }
+await createNotification({
+
+title:
+"Compensation Updated",
+
+message:
+`Compensation ${item.compensationId} was created.`,
+
+type:
+"info",
+
+targetRole:
+"LAND_OFFICER",
+
+createdBy:
+req.user.username,
+
+});
+
+res.status(201).json({
+
+success: true,
+
+compensation:
+item,
+
+});
+
+} catch (error) {
+
+console.error(
+"Create compensation error:",
+error
+);
+
+res
+.status(
+error.code ===
+11000
+? 409
+: 500
+)
+.json({
+
+success: false,
+
+message:
+error.code ===
+11000
+? "Compensation ID already exists."
+: error.message,
+
+});
+
+}
+
+}
 );
 
 /* =========================================================
@@ -2347,437 +2636,513 @@ app.post(
 ========================================================= */
 
 app.get(
-    "/api/cases",
-    authenticateToken,
-    async (
-        req,
-        res
-    ) => {
-        try {
-            const requestedLimit =
-                Number(
-                    req.query.limit
-                );
+"/api/cases",
+authenticateToken,
+async (
+req,
+res
+) => {
 
-            const limit =
-                requestedLimit >
-                0
-                    ? Math.min(
-                          requestedLimit,
-                          1000
-                      )
-                    : 500;
+try {
 
-            const cases =
-                await LegalCase.find()
-                    .sort({
-                        createdAt:
-                            -1,
-                    })
-                    .limit(
-                        limit
-                    )
-                    .lean();
+const requestedLimit =
+Number(
+req.query.limit
+);
 
-            res.json({
-                success: true,
+const limit =
+requestedLimit >
+0
+? Math.min(
+requestedLimit,
+1000
+)
+: 500;
 
-                count:
-                    cases.length,
+const cases =
+await LegalCase.find()
+.sort({
+createdAt:
+-1,
+})
+.limit(
+limit
+)
+.lean();
 
-                cases,
-            });
-        } catch (error) {
-            console.error(
-                "Cases error:",
-                error
-            );
+res.json({
 
-            res
-                .status(500)
-                .json({
-                    success: false,
-                    message:
-                        "Error fetching cases.",
-                });
-        }
-    }
+success: true,
+
+count:
+cases.length,
+
+cases,
+
+});
+
+} catch (error) {
+
+console.error(
+"Cases error:",
+error
+);
+
+res
+.status(500)
+.json({
+
+success: false,
+
+message:
+"Error fetching cases.",
+
+});
+
+}
+
+}
 );
 
 app.post(
-    "/api/cases",
-    authenticateToken,
-    authorizeRoles(
-        "ADMINISTRATOR",
-        "LEGAL_OFFICER"
-    ),
-    async (
-        req,
-        res
-    ) => {
-        try {
-            const legalCase =
-                await LegalCase.create(
-                    {
-                        ...req.body,
+"/api/cases",
+authenticateToken,
+authorizeRoles(
+"ADMINISTRATOR",
+"LEGAL_OFFICER"
+),
+async (
+req,
+res
+) => {
 
-                        createdBy:
-                            req.user.id,
-                    }
-                );
+try {
 
-            await createAudit({
-                req,
+const legalCase =
+await LegalCase.create(
+{
 
-                action:
-                    "CREATE_CASE",
+...req.body,
 
-                event:
-                    "LEGAL_CASE_CREATED",
+createdBy:
+req.user.id,
 
-                details: {
-                    caseId:
-                        legalCase.caseId,
-                },
-            });
-
-            await createNotification({
-                title:
-                    "New Legal Case",
-
-                message:
-                    `Legal case ${legalCase.caseId} was created.`,
-
-                type:
-                    "warning",
-
-                targetRole:
-                    "LEGAL_OFFICER",
-
-                createdBy:
-                    req.user.username,
-            });
-
-            res.status(201).json({
-                success: true,
-
-                legalCase,
-            });
-        } catch (error) {
-            console.error(
-                "Create case error:",
-                error
-            );
-
-            res
-                .status(
-                    error.code ===
-                        11000
-                        ? 409
-                        : 500
-                )
-                .json({
-                    success: false,
-
-                    message:
-                        error.code ===
-                        11000
-                            ? "Case ID already exists."
-                            : error.message,
-                });
-        }
-    }
+}
 );
+
+await createAudit({
+
+req,
+
+action:
+"CREATE_CASE",
+
+event:
+"LEGAL_CASE_CREATED",
+
+details: {
+
+caseId:
+legalCase.caseId,
+
+},
+
+});
+
+await createNotification({
+
+title:
+"New Legal Case",
+
+message:
+`Legal case ${legalCase.caseId} was created.`,
+
+type:
+"warning",
+
+targetRole:
+"LEGAL_OFFICER",
+
+createdBy:
+req.user.username,
+
+});
+
+res.status(201).json({
+
+success: true,
+
+legalCase,
+
+});
+
+} catch (error) {
+
+console.error(
+"Create case error:",
+error
+);
+
+res
+.status(
+error.code ===
+11000
+? 409
+: 500
+)
+.json({
+
+success: false,
+
+message:
+error.code ===
+11000
+? "Case ID already exists."
+: error.message,
+
+});
+
+}
+
+}
+);
+
+/* =========================================================
+   MULTER
+========================================================= */
+
+const storage =
+multer.diskStorage({
+
+destination:
+function (
+req,
+file,
+cb
+) {
+
+cb(
+null,
+uploadDirectory
+);
+
+},
+
+filename:
+function (
+req,
+file,
+cb
+) {
+
+const extension =
+path.extname(
+file.originalname
+);
+
+const baseName =
+path
+.basename(
+file.originalname,
+extension
+)
+.replace(
+/[^a-zA-Z0-9_-]/g,
+"_"
+);
+
+const uniqueName =
+`${Date.now()}-${Math.round(
+Math.random() *
+1e9
+)}-${baseName}${extension}`;
+
+cb(
+null,
+uniqueName
+);
+
+},
+
+});
+
+const upload =
+multer({
+
+storage,
+
+limits: {
+
+fileSize:
+10 * 1024 * 1024,
+
+},
+
+fileFilter:
+function (
+req,
+file,
+cb
+) {
+
+const allowedTypes =
+[
+"application/pdf",
+"image/jpeg",
+"image/png",
+"image/webp",
+];
+
+if (
+allowedTypes.includes(
+file.mimetype
+)
+) {
+
+cb(
+null,
+true
+);
+
+} else {
+
+cb(
+new Error(
+"Only PDF, JPG, PNG and WEBP files are allowed."
+)
+);
+
+}
+
+},
+
+});
 
 /* =========================================================
    DOCUMENT UPLOAD
 ========================================================= */
 
-const storage =
-    multer.diskStorage({
-        destination:
-            function (
-                req,
-                file,
-                cb
-            ) {
-                cb(
-                    null,
-                    uploadDirectory
-                );
-            },
-
-        filename:
-            function (
-                req,
-                file,
-                cb
-            ) {
-                const extension =
-                    path.extname(
-                        file.originalname
-                    );
-
-                const baseName =
-                    path
-                        .basename(
-                            file.originalname,
-                            extension
-                        )
-                        .replace(
-                            /[^a-zA-Z0-9_-]/g,
-                            "_"
-                        );
-
-                const uniqueName =
-                    `${Date.now()}-${Math.round(
-                        Math.random() *
-                            1e9
-                    )}-${baseName}${extension}`;
-
-                cb(
-                    null,
-                    uniqueName
-                );
-            },
-    });
-
-const upload =
-    multer({
-        storage,
-
-        limits: {
-            fileSize:
-                10 * 1024 * 1024,
-        },
-
-        fileFilter:
-            function (
-                req,
-                file,
-                cb
-            ) {
-                const allowedTypes =
-                    [
-                        "application/pdf",
-                        "image/jpeg",
-                        "image/png",
-                        "image/webp",
-                    ];
-
-                if (
-                    allowedTypes.includes(
-                        file.mimetype
-                    )
-                ) {
-                    cb(
-                        null,
-                        true
-                    );
-                } else {
-                    cb(
-                        new Error(
-                            "Only PDF, JPG, PNG and WEBP files are allowed."
-                        )
-                    );
-                }
-            },
-    });
-
 app.post(
-    "/api/documents/upload",
-    authenticateToken,
-    authorizeRoles(
-        "ADMINISTRATOR",
-        "LAND_OFFICER",
-        "LEGAL_OFFICER"
-    ),
-    upload.single(
-        "file"
-    ),
-    async (
-        req,
-        res
-    ) => {
-        try {
-            if (!req.file) {
-                return res
-                    .status(400)
-                    .json({
-                        success: false,
-                        message:
-                            "No file uploaded.",
-                    });
-            }
+"/api/documents/upload",
+authenticateToken,
+authorizeRoles(
+"ADMINISTRATOR",
+"LAND_OFFICER",
+"LEGAL_OFFICER"
+),
+upload.single(
+"file"
+),
+async (
+req,
+res
+) => {
 
-            const documentId =
-                `DOC-${Date.now()}-${Math.floor(
-                    Math.random() *
-                        10000
-                )}`;
+try {
 
-            const document =
-                await Document.create({
-                    documentId,
+if (!req.file) {
 
-                    name:
-                        req.body.name ||
-                        req.file.originalname,
+return res
+.status(400)
+.json({
 
-                    originalName:
-                        req.file.originalname,
+success: false,
 
-                    fileName:
-                        req.file.filename,
+message:
+"No file uploaded.",
 
-                    mimeType:
-                        req.file.mimetype,
+});
 
-                    size:
-                        req.file.size,
+}
 
-                    url:
-                        `/uploads/${req.file.filename}`,
+const documentId =
+`DOC-${Date.now()}-${Math.floor(
+Math.random() *
+10000
+)}`;
 
-                    projectId:
-                        req.body.projectId ||
-                        "",
+const document =
+await Document.create({
 
-                    parcelId:
-                        req.body.parcelId ||
-                        "",
+documentId,
 
-                    uploadedBy:
-                        req.user.username,
+name:
+req.body.name ||
+req.file.originalname,
 
-                    uploadedByRole:
-                        req.user.role,
+originalName:
+req.file.originalname,
 
-                    status:
-                        "UPLOADED",
-                });
+fileName:
+req.file.filename,
 
-            await createAudit({
-                req,
+mimeType:
+req.file.mimetype,
 
-                action:
-                    "UPLOAD_DOCUMENT",
+size:
+req.file.size,
 
-                event:
-                    "DOCUMENT_UPLOADED",
+url:
+`/uploads/${req.file.filename}`,
 
-                details: {
-                    documentId,
-                    fileName:
-                        req.file.originalname,
-                    projectId:
-                        req.body.projectId ||
-                        "",
-                },
-            });
+projectId:
+req.body.projectId ||
+"",
 
-            /*
-             * Land Officer uploads a document:
-             * notify Legal Officer.
-             */
-            if (
-                req.user.role ===
-                "LAND_OFFICER"
-            ) {
-                await createNotification({
-                    title:
-                        "New Document Received",
+parcelId:
+req.body.parcelId ||
+"",
 
-                    message:
-                        `${req.file.originalname} was uploaded by Land Officer and is available for Legal Officer review.`,
+uploadedBy:
+req.user.username,
 
-                    type:
-                        "info",
+uploadedByRole:
+req.user.role,
 
-                    targetRole:
-                        "LEGAL_OFFICER",
+status:
+"UPLOADED",
 
-                    createdBy:
-                        req.user.username,
-                });
-            }
+});
 
-            /*
-             * Legal Officer uploads:
-             * notify Land Officers.
-             */
-            if (
-                req.user.role ===
-                "LEGAL_OFFICER"
-            ) {
-                await createNotification({
-                    title:
-                        "Legal Document Updated",
+await createAudit({
 
-                    message:
-                        `${req.file.originalname} was uploaded by Legal Officer.`,
+req,
 
-                    type:
-                        "info",
+action:
+"UPLOAD_DOCUMENT",
 
-                    targetRole:
-                        "LAND_OFFICER",
+event:
+"DOCUMENT_UPLOADED",
 
-                    createdBy:
-                        req.user.username,
-                });
-            }
+details: {
 
-            io.emit(
-                "workflow:update",
-                {
-                    message:
-                        "A new document was uploaded.",
-                    document,
-                }
-            );
+documentId,
 
-            res.status(201).json({
-                success: true,
+fileName:
+req.file.originalname,
 
-                message:
-                    "Document uploaded successfully.",
+projectId:
+req.body.projectId ||
+"",
 
-                document,
-            });
-        } catch (error) {
-            console.error(
-                "Document upload error:",
-                error
-            );
+},
 
-            /*
-             * Remove uploaded file if DB
-             * operation failed.
-             */
-            if (
-                req.file?.path &&
-                fs.existsSync(
-                    req.file.path
-                )
-            ) {
-                try {
-                    fs.unlinkSync(
-                        req.file.path
-                    );
-                } catch {}
-            }
+});
 
-            res
-                .status(500)
-                .json({
-                    success: false,
-                    message:
-                        error.message ||
-                        "Document upload failed.",
-                });
-        }
-    }
+if (
+req.user.role ===
+"LAND_OFFICER"
+) {
+
+await createNotification({
+
+title:
+"New Document Received",
+
+message:
+`${req.file.originalname} was uploaded by Land Officer and is available for Legal Officer review.`,
+
+type:
+"info",
+
+targetRole:
+"LEGAL_OFFICER",
+
+createdBy:
+req.user.username,
+
+});
+
+}
+
+if (
+req.user.role ===
+"LEGAL_OFFICER"
+) {
+
+await createNotification({
+
+title:
+"Legal Document Updated",
+
+message:
+`${req.file.originalname} was uploaded by Legal Officer.`,
+
+type:
+"info",
+
+targetRole:
+"LAND_OFFICER",
+
+createdBy:
+req.user.username,
+
+});
+
+}
+
+io.emit(
+"workflow:update",
+{
+
+message:
+"A new document was uploaded.",
+
+document,
+
+}
+);
+
+res.status(201).json({
+
+success: true,
+
+message:
+"Document uploaded successfully.",
+
+document,
+
+});
+
+} catch (error) {
+
+console.error(
+"Document upload error:",
+error
+);
+
+if (
+req.file?.path &&
+fs.existsSync(
+req.file.path
+)
+) {
+
+try {
+
+fs.unlinkSync(
+req.file.path
+);
+
+} catch {}
+
+}
+
+res
+.status(500)
+.json({
+
+success: false,
+
+message:
+error.message ||
+"Document upload failed.",
+
+});
+
+}
+
+}
 );
 
 /* =========================================================
@@ -2785,45 +3150,56 @@ app.post(
 ========================================================= */
 
 app.get(
-    "/api/documents",
-    authenticateToken,
-    async (
-        req,
-        res
-    ) => {
-        try {
-            const documents =
-                await Document.find()
-                    .sort({
-                        createdAt:
-                            -1,
-                    })
-                    .limit(500)
-                    .lean();
+"/api/documents",
+authenticateToken,
+async (
+req,
+res
+) => {
 
-            res.json({
-                success: true,
+try {
 
-                count:
-                    documents.length,
+const documents =
+await Document.find()
+.sort({
+createdAt:
+-1,
+})
+.limit(500)
+.lean();
 
-                documents,
-            });
-        } catch (error) {
-            console.error(
-                "Documents error:",
-                error
-            );
+res.json({
 
-            res
-                .status(500)
-                .json({
-                    success: false,
-                    message:
-                        "Error fetching documents.",
-                });
-        }
-    }
+success: true,
+
+count:
+documents.length,
+
+documents,
+
+});
+
+} catch (error) {
+
+console.error(
+"Documents error:",
+error
+);
+
+res
+.status(500)
+.json({
+
+success: false,
+
+message:
+"Error fetching documents.",
+
+});
+
+}
+
+}
 );
 
 /* =========================================================
@@ -2831,72 +3207,87 @@ app.get(
 ========================================================= */
 
 app.get(
-    "/api/notifications",
-    authenticateToken,
-    async (
-        req,
-        res
-    ) => {
-        try {
-            const userId =
-                req.user.id;
+"/api/notifications",
+authenticateToken,
+async (
+req,
+res
+) => {
 
-            const role =
-                req.user.role;
+try {
 
-            const notifications =
-                await Notification.find(
-                    {
-                        $or: [
-                            {
-                                targetUserId:
-                                    userId,
-                            },
+const userId =
+req.user.id;
 
-                            {
-                                targetRole:
-                                    role,
-                            },
+const role =
+req.user.role;
 
-                            {
-                                targetRole:
-                                    "",
-                                targetUserId:
-                                    "",
-                            },
-                        ],
-                    }
-                )
-                    .sort({
-                        createdAt:
-                            -1,
-                    })
-                    .limit(100)
-                    .lean();
+const notifications =
+await Notification.find(
+{
 
-            res.json({
-                success: true,
+$or: [
 
-                count:
-                    notifications.length,
+{
+targetUserId:
+userId,
+},
 
-                notifications,
-            });
-        } catch (error) {
-            console.error(
-                "Notifications error:",
-                error
-            );
+{
+targetRole:
+role,
+},
 
-            res
-                .status(500)
-                .json({
-                    success: false,
-                    message:
-                        "Error fetching notifications.",
-                });
-        }
-    }
+{
+targetRole:
+"",
+targetUserId:
+"",
+},
+
+],
+
+}
+)
+.sort({
+createdAt:
+-1,
+})
+.limit(100)
+.lean();
+
+res.json({
+
+success: true,
+
+count:
+notifications.length,
+
+notifications,
+
+});
+
+} catch (error) {
+
+console.error(
+"Notifications error:",
+error
+);
+
+res
+.status(500)
+.json({
+
+success: false,
+
+message:
+"Error fetching notifications.",
+
+});
+
+}
+
+}
 );
 
 /* =========================================================
@@ -2904,49 +3295,65 @@ app.get(
 ========================================================= */
 
 app.patch(
-    "/api/notifications/:id/read",
-    authenticateToken,
-    async (
-        req,
-        res
-    ) => {
-        try {
-            const notification =
-                await Notification.findByIdAndUpdate(
-                    req.params.id,
-                    {
-                        read: true,
-                    },
-                    {
-                        new: true,
-                    }
-                ).lean();
+"/api/notifications/:id/read",
+authenticateToken,
+async (
+req,
+res
+) => {
 
-            if (!notification) {
-                return res
-                    .status(404)
-                    .json({
-                        success: false,
-                        message:
-                            "Notification not found.",
-                    });
-            }
+try {
 
-            res.json({
-                success: true,
+const notification =
+await Notification.findByIdAndUpdate(
+req.params.id,
+{
+read: true,
+},
+{
+new: true,
+}
+).lean();
 
-                notification,
-            });
-        } catch (error) {
-            res
-                .status(500)
-                .json({
-                    success: false,
-                    message:
-                        error.message,
-                });
-        }
-    }
+if (!notification) {
+
+return res
+.status(404)
+.json({
+
+success: false,
+
+message:
+"Notification not found.",
+
+});
+
+}
+
+res.json({
+
+success: true,
+
+notification,
+
+});
+
+} catch (error) {
+
+res
+.status(500)
+.json({
+
+success: false,
+
+message:
+error.message,
+
+});
+
+}
+
+}
 );
 
 /* =========================================================
@@ -2954,48 +3361,59 @@ app.patch(
 ========================================================= */
 
 app.get(
-    "/api/audit",
-    authenticateToken,
-    authorizeRoles(
-        "ADMINISTRATOR"
-    ),
-    async (
-        req,
-        res
-    ) => {
-        try {
-            const audit =
-                await Audit.find()
-                    .sort({
-                        createdAt:
-                            -1,
-                    })
-                    .limit(500)
-                    .lean();
+"/api/audit",
+authenticateToken,
+authorizeRoles(
+"ADMINISTRATOR"
+),
+async (
+req,
+res
+) => {
 
-            res.json({
-                success: true,
+try {
 
-                count:
-                    audit.length,
+const audit =
+await Audit.find()
+.sort({
+createdAt:
+-1,
+})
+.limit(500)
+.lean();
 
-                audit,
-            });
-        } catch (error) {
-            console.error(
-                "Audit error:",
-                error
-            );
+res.json({
 
-            res
-                .status(500)
-                .json({
-                    success: false,
-                    message:
-                        "Error fetching audit trail.",
-                });
-        }
-    }
+success: true,
+
+count:
+audit.length,
+
+audit,
+
+});
+
+} catch (error) {
+
+console.error(
+"Audit error:",
+error
+);
+
+res
+.status(500)
+.json({
+
+success: false,
+
+message:
+"Error fetching audit trail.",
+
+});
+
+}
+
+}
 );
 
 /* =========================================================
@@ -3003,25 +3421,29 @@ app.get(
 ========================================================= */
 
 app.get(
-    "/api/admin/dashboard",
-    authenticateToken,
-    authorizeRoles(
-        "ADMINISTRATOR"
-    ),
-    async (
-        req,
-        res
-    ) => {
-        res.json({
-            success: true,
+"/api/admin/dashboard",
+authenticateToken,
+authorizeRoles(
+"ADMINISTRATOR"
+),
+async (
+req,
+res
+) => {
 
-            message:
-                "Administrator access granted.",
+res.json({
 
-            access:
-                "Full System",
-        });
-    }
+success: true,
+
+message:
+"Administrator access granted.",
+
+access:
+"Full System",
+
+});
+
+}
 );
 
 /* =========================================================
@@ -3029,23 +3451,27 @@ app.get(
 ========================================================= */
 
 app.get(
-    "/api/land/dashboard",
-    authenticateToken,
-    authorizeRoles(
-        "ADMINISTRATOR",
-        "LAND_OFFICER"
-    ),
-    async (
-        req,
-        res
-    ) => {
-        res.json({
-            success: true,
+"/api/land/dashboard",
+authenticateToken,
+authorizeRoles(
+"ADMINISTRATOR",
+"LAND_OFFICER"
+),
+async (
+req,
+res
+) => {
 
-            message:
-                "Land & Projects access granted.",
-        });
-    }
+res.json({
+
+success: true,
+
+message:
+"Land & Projects access granted.",
+
+});
+
+}
 );
 
 /* =========================================================
@@ -3053,23 +3479,27 @@ app.get(
 ========================================================= */
 
 app.get(
-    "/api/legal/dashboard",
-    authenticateToken,
-    authorizeRoles(
-        "ADMINISTRATOR",
-        "LEGAL_OFFICER"
-    ),
-    async (
-        req,
-        res
-    ) => {
-        res.json({
-            success: true,
+"/api/legal/dashboard",
+authenticateToken,
+authorizeRoles(
+"ADMINISTRATOR",
+"LEGAL_OFFICER"
+),
+async (
+req,
+res
+) => {
 
-            message:
-                "Legal access granted.",
-        });
-    }
+res.json({
+
+success: true,
+
+message:
+"Legal access granted.",
+
+});
+
+}
 );
 
 /* =========================================================
@@ -3077,19 +3507,23 @@ app.get(
 ========================================================= */
 
 app.use(
-    (req, res) => {
-        res
-            .status(404)
-            .json({
-                success: false,
+(req, res) => {
 
-                message:
-                    "API route not found.",
+res
+.status(404)
+.json({
 
-                path:
-                    req.originalUrl,
-            });
-    }
+success: false,
+
+message:
+"API route not found.",
+
+path:
+req.originalUrl,
+
+});
+
+}
 );
 
 /* =========================================================
@@ -3097,56 +3531,70 @@ app.use(
 ========================================================= */
 
 app.use(
-    (
-        error,
-        req,
-        res,
-        next
-    ) => {
-        console.error(
-            "Global error:",
-            error
-        );
+(
+error,
+req,
+res,
+next
+) => {
 
-        if (
-            error.message ===
-            "CORS origin not allowed"
-        ) {
-            return res
-                .status(403)
-                .json({
-                    success: false,
-                    message:
-                        "CORS origin not allowed.",
-                });
-        }
+console.error(
+"Global error:",
+error
+);
 
-        if (
-            error instanceof
-            multer.MulterError
-        ) {
-            return res
-                .status(400)
-                .json({
-                    success: false,
-                    message:
-                        error.message,
-                });
-        }
+if (
+error.message ===
+"CORS origin not allowed"
+) {
 
-        res
-            .status(
-                error.status ||
-                    500
-            )
-            .json({
-                success: false,
+return res
+.status(403)
+.json({
 
-                message:
-                    error.message ||
-                    "Internal server error.",
-            });
-    }
+success: false,
+
+message:
+"CORS origin not allowed.",
+
+});
+
+}
+
+if (
+error instanceof
+multer.MulterError
+) {
+
+return res
+.status(400)
+.json({
+
+success: false,
+
+message:
+error.message,
+
+});
+
+}
+
+res
+.status(
+error.status ||
+500
+)
+.json({
+
+success: false,
+
+message:
+error.message ||
+"Internal server error.",
+
+});
+
+}
 );
 
 /* =========================================================
@@ -3154,34 +3602,40 @@ app.use(
 ========================================================= */
 
 async function connectDatabase() {
-    try {
-        await mongoose.connect(
-            MONGO_URI,
-            {
-                serverSelectionTimeoutMS:
-                    15000,
-            }
-        );
 
-        console.log(
-            "MongoDB connected"
-        );
+try {
 
-        console.log(
-            "Database:",
-            mongoose.connection.name
-        );
-    } catch (error) {
-        console.error(
-            "MongoDB connection failed:"
-        );
+await mongoose.connect(
+MONGO_URI,
+{
+serverSelectionTimeoutMS:
+15000,
+}
+);
 
-        console.error(
-            error.message
-        );
+console.log(
+"MongoDB connected"
+);
 
-        process.exit(1);
-    }
+console.log(
+"Database:",
+mongoose.connection.name
+);
+
+} catch (error) {
+
+console.error(
+"MongoDB connection failed:"
+);
+
+console.error(
+error.message
+);
+
+process.exit(1);
+
+}
+
 }
 
 /* =========================================================
@@ -3189,75 +3643,76 @@ async function connectDatabase() {
 ========================================================= */
 
 async function startServer() {
-    try {
-        await connectDatabase();
 
-        await createDefaultUsers();
+try {
 
-        /*
-         * IMPORTANT:
-         * We intentionally do NOT insert fake projects.
-         *
-         * Your existing MongoDB projects are preserved.
-         */
+await connectDatabase();
 
-        const projectCount =
-            await Project.countDocuments();
+await createDefaultUsers();
 
-        const landCount =
-            await Land.countDocuments();
+const projectCount =
+await Project.countDocuments();
 
-        const compensationCount =
-            await Compensation.countDocuments();
+const landCount =
+await Land.countDocuments();
 
-        const caseCount =
-            await LegalCase.countDocuments();
+const compensationCount =
+await Compensation.countDocuments();
 
-        console.log(
-            "Projects in database:",
-            projectCount
-        );
+const caseCount =
+await LegalCase.countDocuments();
 
-        console.log(
-            "Land parcels in database:",
-            landCount
-        );
+console.log(
+"Projects in database:",
+projectCount
+);
 
-        console.log(
-            "Compensation records:",
-            compensationCount
-        );
+console.log(
+"Land parcels in database:",
+landCount
+);
 
-        console.log(
-            "Legal cases:",
-            caseCount
-        );
+console.log(
+"Compensation records:",
+compensationCount
+);
 
-        server.listen(
-            PORT,
-            "0.0.0.0",
-            () => {
-                console.log(
-                    `NLAMS server running on port ${PORT}`
-                );
+console.log(
+"Legal cases:",
+caseCount
+);
 
-                console.log(
-                    `http://localhost:${PORT}`
-                );
+server.listen(
+PORT,
+"0.0.0.0",
+() => {
 
-                console.log(
-                    `Environment: ${NODE_ENV}`
-                );
-            }
-        );
-    } catch (error) {
-        console.error(
-            "Server startup failed:",
-            error
-        );
+console.log(
+`NLAMS server running on port ${PORT}`
+);
 
-        process.exit(1);
-    }
+console.log(
+`http://localhost:${PORT}`
+);
+
+console.log(
+`Environment: ${NODE_ENV}`
+);
+
+}
+);
+
+} catch (error) {
+
+console.error(
+"Server startup failed:",
+error
+);
+
+process.exit(1);
+
+}
+
 }
 
 /* =========================================================
@@ -3265,49 +3720,61 @@ async function startServer() {
 ========================================================= */
 
 process.on(
-    "SIGINT",
-    async () => {
-        console.log(
-            "\nShutting down NLAMS..."
-        );
+"SIGINT",
+async () => {
 
-        await mongoose.connection.close();
+console.log(
+"\nShutting down NLAMS..."
+);
 
-        server.close(() => {
-            process.exit(0);
-        });
-    }
+await mongoose.connection.close();
+
+server.close(() => {
+
+process.exit(0);
+
+});
+
+}
 );
 
 process.on(
-    "SIGTERM",
-    async () => {
-        await mongoose.connection.close();
+"SIGTERM",
+async () => {
 
-        server.close(() => {
-            process.exit(0);
-        });
-    }
+await mongoose.connection.close();
+
+server.close(() => {
+
+process.exit(0);
+
+});
+
+}
 );
 
 process.on(
-    "uncaughtException",
-    (error) => {
-        console.error(
-            "Uncaught exception:",
-            error
-        );
-    }
+"uncaughtException",
+(error) => {
+
+console.error(
+"Uncaught exception:",
+error
+);
+
+}
 );
 
 process.on(
-    "unhandledRejection",
-    (error) => {
-        console.error(
-            "Unhandled rejection:",
-            error
-        );
-    }
+"unhandledRejection",
+(error) => {
+
+console.error(
+"Unhandled rejection:",
+error
+);
+
+}
 );
 
 /* =========================================================
