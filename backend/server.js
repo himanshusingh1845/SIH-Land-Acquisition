@@ -29,9 +29,7 @@ process.env.JWT_SECRET ||
 const NODE_ENV =
 process.env.NODE_ENV || "development";
 
-/* =========================================================
-   CORS
-========================================================= */
+// CORS //
 
 const allowedOrigins = [
 "http://localhost:5173",
@@ -82,11 +80,7 @@ credentials: true,
 app.use(cors(corsOptions));
 
 app.options("*", cors(corsOptions));
-
-/* =========================================================
-   SECURITY
-========================================================= */
-
+// Security //
 app.use(
 helmet({
 crossOriginResourcePolicy: {
